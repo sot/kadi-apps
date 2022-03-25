@@ -1,0 +1,39 @@
+Comments about CORS.
+====================
+
+Apache is configured with
+  Header set Access-Control-Allow-Origin https://occweb.cfa.harvard.edu
+and that prevents a development client running on my laptop, so I would normally need to add
+  Header set Access-Control-Allow-Origin http://localhost:3000
+
+Cookies and CORS
+----------------
+
+I found this SO answer very useful:
+(from https://stackoverflow.com/questions/46288437/set-cookies-for-cross-origin-requests)
+
+To allow receiving & sending cookies by a CORS request successfully, do the following.
+
+Back-end (server): Set the HTTP header Access-Control-Allow-Credentials value to true. Also, make sure the HTTP headers Access-Control-Allow-Origin and Access-Control-Allow-Headers are set and not with a wildcard *.
+
+For more info on setting CORS in express js read the docs here
+
+Cookie settings: Recommended Cookie settings per Chrome and Firefox update in 2021: SameSite=None and Secure. See MDN.
+
+When doing SameSite=None, Secure is even required. See MDN.
+
+Front-end (client): Set the XMLHttpRequest.withCredentials flag to true, this can be achieved in different ways depending on the request-response library used:
+
+- jQuery 1.5.1 xhrFields: {withCredentials: true}
+- ES6 fetch() credentials: 'include'
+- axios: withCredentials: true
+
+Configuring Flask CORS
+----------------------
+
+A quick way to configure it is something like
+
+    app.config['CORS_ORIGINS'] = ["http://127.0.0.1:3000"]
+    app.config['CORS_ALLOW_HEADERS'] = ['Content-Type', 'Authorization']
+    app.config['CORS_SEND_WILDCARD'] = True
+    app.config['CORS_EXPOSE_HEADERS'] = ['Content-Type', 'Authorization']
