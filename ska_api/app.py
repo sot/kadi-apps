@@ -15,7 +15,7 @@ import pyyaks.logger
 
 def get_app(name=__name__, settings='devel'):
     import ska_api
-    from ska_api.blueprints import auth, github_oauth, test
+    from ska_api.blueprints import auth, github_oauth, test, astromon
 
     logger = pyyaks.logger.get_logger(name='ska_api', level='INFO')
     msg = f'Starting Ska API version {ska_api.__version__}'
@@ -41,6 +41,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(auth.blueprint, url_prefix='/auth')
     app.register_blueprint(github_oauth.blueprint, url_prefix='/auth/github')
     app.register_blueprint(test.blueprint, url_prefix='/test')
+    app.register_blueprint(astromon.blueprint, url_prefix='/astromon')
 
     return app
 
