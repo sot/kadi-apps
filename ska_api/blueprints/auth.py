@@ -48,15 +48,11 @@ def token():
 
     ok = bool(cookie_is_valid) | _check_password(args.user, args.password)
     if not ok:
-        print(bool(cookie_is_valid))
-        print(_check_token(cookie))
-        print(_check_password(args.user, args.password))
         return {'ok': False, 'message': '403 (forbidden)'}, 403
-
     user = refresh_token_payload['user'] if refresh_token_payload else args.user
 
     encoded_jwt = generate_token(
-        user, current_app.config['JWT_SECRET'], validity=datetime.timedelta(days=7)
+        user, current_app.config['JWT_SECRET'], validity=datetime.timedelta(minutes=10)
     )
 
     if not cookie_is_valid:
