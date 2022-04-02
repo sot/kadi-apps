@@ -47,4 +47,4 @@ def get_app(name=__name__, settings='devel'):
 
 if __name__ == "__main__":
     # this starts the development server
-    get_app(settings='devel').run(host='0.0.0.0')
+    get_app(settings='devel').run(host='0.0.0.0', ssl_context='adhoc')
