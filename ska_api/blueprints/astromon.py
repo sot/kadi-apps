@@ -127,7 +127,6 @@ def add_regions():
                     new_regions[['x', 'y', 'radius', 'obsid', 'comments', 'region_id']],
                     cls=Encoder('rows')
                 ))
-                print(new_regions)
                 return {'regions': new_regions, 'ok': True}, 200
         logger.info(f'Image file for OBSID {obsid} does not exist')
         return {'regions': [], 'ok': False}, 404
@@ -186,7 +185,6 @@ def astromon():
                 matches[['name', 'catalog', 'x', 'y', 'ra', 'dec', 'c_id']],
                 cls=Encoder('rows')
             ))
-            print(matches)
             for match in matches:
                 ra = match['ra']
                 dec = match['dec']
@@ -300,8 +298,8 @@ def matches():
         result = {
             'matches': json.loads(json.dumps(matches[keys], cls=Encoder('rows'))),
             'time_range': [
-                CxoTime(matches['time'].min(), format='unix').iso,
-                CxoTime(matches['time'].max(), format='unix').iso],
+                CxoTime(matches['time'].min(), format='unix').isot,
+                CxoTime(matches['time'].max(), format='unix').isot],
         }
         return result, 200
     except werkzeug.exceptions.BadRequest as e:
@@ -322,7 +320,7 @@ def _get_matches(dbfile=None):
     matches = db.get_cross_matches(dbfile=dbfile)
     matches['time'] = matches['time'].unix
     matches['idx'] = np.arange(len(matches))
-    matches['date_iso'] = CxoTime(matches['date_obs']).iso
+    matches['date_iso'] = CxoTime(matches['date_obs']).isot
     matches['dr'] = np.round(matches['dr'], 2)
     matches['snr'] = np.round(matches['snr'], 2)
     return matches
