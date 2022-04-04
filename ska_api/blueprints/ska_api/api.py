@@ -13,7 +13,7 @@ APPS = {
     ('kadi', 'commands', 'states'): ['get_states']}
 
 
-blueprint = Blueprint('astromon', __name__, template_folder='templates')
+blueprint = Blueprint('ska_api', __name__, template_folder='templates')
 
 
 @blueprint.route("/")
