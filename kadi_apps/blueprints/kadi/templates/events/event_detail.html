@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block moreheader %}
+<h2> {{ model_description }} detail </h2>
+{% endblock %}
+
+{% block content %}
+<table class="srclist">
+  <tr>
+    <th> Mica obsid </th> <td> {%if obsid %} <a href="/mica/?obsid_or_date={{ obsid }}" target="_blank"> {{ obsid }} </a> {% else %} Unknown {% endif %} </td>
+  </tr>
+  {% for name, val in names_vals %}
+  <tr>
+    <th> {{ name }} </th> <td> {{ val }} </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}
+
+{% block navbuttons %}
+  <br />
+
+  <table>
+    <tr>
+      <td>
+        <a href="{{ url_for('kadi.event_list', model_name=model_name, filter=filter, sort=sort) }}"><img src="{{ url_for('kadi.static', filename='images/list_32.png') }}"></a>
+
+        {% if previous_event_url %}
+        <a href="{{ previous_event_url | safe }}">
+          <img src="{{ url_for('kadi.static', filename='images/left_grey_32.png') }}"></a>
+        {% else %}
+        <img src="{{ url_for('kadi.static', filename='images/empty_32.gif') }}">
+        {% endif %}
+
+        {% if next_event_url %}
+        <a href="{{ next_event_url | safe }}">
+          <img src="{{ url_for('kadi.static', filename='images/right_grey_32.png') }}"></a>
+        {% else %}
+        <img src="{{ url_for('kadi.static', filename='images/empty_32.gif') }}">
+        {% endif %}
+        <img src="{{ url_for('kadi.static', filename='images/empty_32.gif') }}">
+      </td>
+      <td>
+        <form action="" method="get">
+          Filter: <input type="text" name="filter" value="{{ filter }}" size="70" readonly>
+        </form>
+      </td>
+    </tr>
+  </table>
+{% endblock %}

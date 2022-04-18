@@ -16,7 +16,7 @@ def test_server(request):
     p.start()
     time.sleep(2)  # this is to let the server spin up
     info = {
-        'url': 'http://127.0.0.1:5000',
+        'url': 'http://127.0.0.1:5000/api',
         'user': 'test_user',
         'password': 'test_password',
     }
