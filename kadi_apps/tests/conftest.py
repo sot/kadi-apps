@@ -13,7 +13,7 @@ def test_server(request):
     import requests
     from multiprocessing import Process
     info = {
-        'url': 'http://127.0.0.1:5000',
+        'url': 'http://127.0.0.1:5000/api',
         'user': 'test_user',
         'password': 'test_password',
     }
