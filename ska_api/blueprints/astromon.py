@@ -60,7 +60,7 @@ def remove_regions():
         json_data = request.get_json(force=True)
         regions = json_data['regions']
         logger.info(f'regions: {regions}')
-        db.remove_regions(regions, db_file=workdir / 'astromon.h5')
+        db.remove_regions(regions, dbfile=workdir / 'astromon.h5')
         return {'regions': regions}, 200
     except werkzeug.exceptions.BadRequest as e:
         logger.info(f'BadRequest in Catalog.add_regions: {e}')
@@ -120,7 +120,7 @@ def add_regions():
                 t['ra'] = float(pos.ra / u.deg)
                 t['dec'] = float(pos.dec / u.deg)
                 t['user'] = auth.user
-                new_regions = db.add_regions(t, db_file=workdir / 'astromon.h5')
+                new_regions = db.add_regions(t, dbfile=workdir / 'astromon.h5')
                 new_regions['loc'] = SkyCoord(new_regions['ra'] * u.deg, new_regions['dec'] * u.deg)
                 new_regions['x'], new_regions['y'] = wcs.world_to_pixel(new_regions['loc'])
                 new_regions = json.loads(json.dumps(
@@ -308,7 +308,7 @@ def matches():
 
 
 def _get_regions(loc, obsid, dbfile=None):
-    regions = db.get('astromon_regions', dbfile=dbfile)
+    regions = db.get_table('astromon_regions', dbfile=dbfile)
     regions['loc'] = SkyCoord(regions['ra'] * u.deg, regions['dec'] * u.deg)
     regions = regions[
         (regions['loc'].separation(loc) < 3 * u.arcmin) | (regions['obsid'] == obsid)
@@ -327,8 +327,8 @@ def _get_matches(dbfile=None):
 
 
 def _get_sources(obsid, dbfile=None):
-    cat = db.get('astromon_cat_src', dbfile=dbfile)
-    xray = db.get('astromon_xray_src', dbfile=dbfile)
+    cat = db.get_table('astromon_cat_src', dbfile=dbfile)
+    xray = db.get_table('astromon_xray_src', dbfile=dbfile)
     cat = cat[cat['obsid'] == obsid]
     xray = xray[xray['obsid'] == obsid]
     cat['loc'] = SkyCoord(cat['ra'] * u.deg, cat['dec'] * u.deg)

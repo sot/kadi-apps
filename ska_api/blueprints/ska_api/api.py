@@ -3,7 +3,6 @@ from flask import request
 
 import logging
 import json
-import os
 
 
 APPS = {
@@ -24,10 +23,10 @@ def show_help():
 
 @blueprint.route("/<path:path>")
 def api(path):
+    logger = logging.getLogger()
     try:
         app_func = _get_function(path)
         app_kwargs = _get_args(exclude=['table_format'])
-        logger = logging.getLogger()
         logger.info(f'{path.replace("/", ".")}(')
         logger.info(f'    **{app_kwargs}')
         logger.info(f')')
@@ -66,10 +65,10 @@ def _get_function(path):
             func_parts = module_func_parts[ii + 1:]
 
     if app_module is None:
-        raise ValueError('no app module found for URL path {}'.format(url.path))
+        raise ValueError('no app module found for URL path {}'.format(path))
 
     if not func_parts:
-        raise ValueError('no function parts found for URL path {}'.format(url.path))
+        raise ValueError('no function parts found for URL path {}'.format(path))
 
     # Check that the function is allowed
     func_name = '.'.join(func_parts)
