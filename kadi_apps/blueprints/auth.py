@@ -9,7 +9,7 @@ from flask import current_app, after_this_request
 from werkzeug.security import check_password_hash
 
 
-from ska_api.authentication import generate_token
+from kadi_apps.authentication import generate_token
 
 
 blueprint = Blueprint('auth', __name__)
@@ -35,7 +35,7 @@ def _check_token(token):
 
 @blueprint.route('/token', methods=['POST'])
 def token():
-    logging.getLogger('ska_api').info('Getting token')
+    logging.getLogger('kadi_apps').info('Getting token')
 
     parse = reqparse.RequestParser()
     parse.add_argument('user')
@@ -73,7 +73,7 @@ def token():
 
 @blueprint.route('/logout', methods=['POST'])
 def logout():
-    logging.getLogger('ska_api').info('Logging out')
+    logging.getLogger('kadi_apps').info('Logging out')
 
     @after_this_request
     def delete_cookie(response):

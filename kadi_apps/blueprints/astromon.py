@@ -15,13 +15,13 @@ from cxotime import CxoTime
 
 from flask import Blueprint, current_app, request
 import werkzeug
-from ska_api.authentication import Authentication
+from kadi_apps.authentication import Authentication
 
 blueprint = Blueprint('astromon', __name__)
 
 auth = Authentication()
 
-logger = logging.getLogger('ska_api')
+logger = logging.getLogger('kadi_apps')
 
 
 class ComplexEncoder(json.JSONEncoder):

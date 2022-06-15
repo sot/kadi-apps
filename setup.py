@@ -6,18 +6,18 @@ try:
 except ImportError:
     cmdclass = {}
 
-setup(name='ska_api',
+setup(name='kadi-apps',
       author='Javier Gonzalez',
       description='Ska REST API',
       author_email='javier.gonzalez@cfa.harvard.edu',
-      packages=['ska_api', 'ska_api.settings', 'ska_api.blueprints'],
+      packages=['kadi_apps', 'kadi_apps.settings', 'kadi_apps.blueprints'],
       license=("New BSD/3-clause BSD License\nCopyright (c) 2021"
                " Smithsonian Astrophysical Observatory\nAll rights reserved."),
-      url='http://github.com/sot/ska_api',
+      url='http://github.com/sot/web-kadi-apps',
       use_scm_version=True,
       setup_requires=['setuptools_scm', 'setuptools_scm_git_archive'],
       zip_safe=False,
       # tests_require=['pytest'],
-      # package_data={'ska_api.tests': ['data/*.pkl']},
+      # package_data={'kadi_apps.tests': ['data/*.pkl']},
       cmdclass=cmdclass,
       )

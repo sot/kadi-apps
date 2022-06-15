@@ -1,5 +1,5 @@
 from flask import Blueprint
-from ska_api.authentication import Authentication
+from kadi_apps.authentication import Authentication
 
 
 blueprint = Blueprint('private', __name__)
