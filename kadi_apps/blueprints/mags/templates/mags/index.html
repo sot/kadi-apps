@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block body %}
+<body class="with-background">
+{% endblock %}
+
+{% block content %}
+<p><p>
+<h1 align="center"> {{ title }} </h1>
+
+<form action="" method="get">
+      <div class="row">
+        <div class="large-2 columns"> &nbsp; </div>
+        <div class="large-3 columns">
+          <label for="right-label" class="right inline">AGASC ID</label>
+        </div>
+        <div class="large-3 columns">
+          <input type="text" id="right-label" name="agasc_id" value="{{agasc_id}}">
+        </div>
+        <div class="large-4 columns"> &nbsp; </div>
+      </div>
+</form>
+
+{% if url %}
+  <iframe class="mags_frame"
+	  id="mags_frame"
+	  src="{{url | safe}}"
+	  <!--height="1500" style="width: 100%; height: 100; border: none"-->
+	  style="width: 100%; border: none"> </iframe>
+{% endif %}
+
+<script>
+  window.addEventListener('load', function() {
+    let message = {
+      height: document.documentElement.scrollHeight * 4,
+      width: document.body.scrollWidth 
+    };
+
+    // window.top refers to parent window
+    window.top.postMessage(message, "*");
+  });
+
+  let iframe = document.querySelector("#mags_frame");
+
+  window.addEventListener(
+    'message',
+    function(e) {
+      // message that was passed from iframe page
+      let message = e.data;
+      const height = e.data.height
+      console.log('HEIGHT', height);
+      iframe.style.height = height + 'px';
+      //iframe.style.width = message.width + 'px';
+    },
+    false
+  );
+</script>
+
+
+{% endblock %}
