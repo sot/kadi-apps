@@ -7,8 +7,9 @@ import json
 
 APPS = {
     ('mica', 'starcheck'): ['get_*'],
+    ('mica', 'archive', 'aca_dark', 'dark_cal'): ['get_dark_cal_id', 'get_dark_cal_image'],
     ('kadi', 'events'): ['*.filter'],
-    ('kadi', 'commands'): ['get_cmds'],
+    ('kadi', 'commands'): ['get_cmds', 'get_observations', 'get_starcats'],
     ('kadi', 'commands', 'states'): ['get_states']}
 
 
