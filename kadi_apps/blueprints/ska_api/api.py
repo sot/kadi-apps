@@ -21,6 +21,10 @@ def show_help():
     return render_template('help.html')
 
 
+class NotFound(Exception):
+    pass
+
+
 @blueprint.route("/<path:path>")
 def api(path):
     logger = logging.getLogger()
@@ -35,9 +39,12 @@ def api(path):
         output = app_func(**app_kwargs)
         output = dumper.encode(output).encode('utf-8')
         return output, 200
+    except NotFound as e:
+        logger.info(f'NotFound: {e}')
+        return {'ok': False, 'error': str(e)}, 404
     except Exception as e:
         logger.info(f'Exception: {e}')
-        return {'ok': False, 'error': str(e)}
+        return {'ok': False, 'error': str(e)}, 500
 
 
 def _get_function(path):
@@ -65,16 +72,18 @@ def _get_function(path):
             func_parts = module_func_parts[ii + 1:]
 
     if app_module is None:
-        raise ValueError('no app module found for URL path {}'.format(path))
+        raise NotFound('no app module found for URL path {}'.format(path))
 
     if not func_parts:
-        raise ValueError('no function parts found for URL path {}'.format(path))
+        raise NotFound('no function parts found for URL path {}'.format(path))
 
     # Check that the function is allowed
     func_name = '.'.join(func_parts)
     if not any(fnmatch(func_name, app_glob) for app_glob in app_globs):
-        raise ValueError('function {} is not allowed for {}'
-                         .format(func_name, '.'.join(app_module_parts)))
+        raise NotFound(
+            'function {} was not found or is not allowed for {}'
+            .format(func_name, '.'.join(app_module_parts))
+        )
 
     app_func = app_module
     for func_part in func_parts:
