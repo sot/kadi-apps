@@ -3,13 +3,8 @@ import requests
 import numpy as np
 
 
-URL = 'http://127.0.0.1:5000'
-USER = 'jgonzalez'
-PASSWORD = 'q1p0e3i8'
-
-
-def test_matches():
-    r = requests.get(f'{URL}/astromon/matches')
+def test_matches(test_server):
+    r = requests.get(f'{test_server["url"]}/astromon/matches')
     assert r.ok
     content = json.loads(r.content.decode())
     assert list(content.keys()) == ['matches', 'time_range']
@@ -22,18 +17,21 @@ def test_matches():
     ]
 
 
-def test_obsid_auth():
-    r = requests.get(f'{URL}/astromon')
+def test_obsid_auth(test_server):
+    r = requests.get(f'{test_server["url"]}/astromon')
     assert not r.ok
     assert r.reason == 'UNAUTHORIZED'
 
 
-def test_obsid():
-    r = requests.post(f'{URL}/auth/token', json={'user': USER, 'password': PASSWORD})
+def test_obsid(test_server):
+    r = requests.post(
+        f'{test_server["url"]}/auth/token',
+        json={'user': test_server["user"], 'password': test_server["password"]}
+    )
     token = json.loads(r.text)['token']
 
     r = requests.get(
-        f'{URL}/astromon',
+        f'{test_server["url"]}/astromon',
         json={'obsid': 8008},
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -50,14 +48,17 @@ def test_obsid():
     assert data['obspar']['detector'] == 'ACIS-I'
 
 
-def test_regions():
+def test_regions(test_server):
     token = json.loads(
-        requests.post(f'{URL}/auth/token', json={'user': USER, 'password': PASSWORD}).text
+        requests.post(
+            f'{test_server["url"]}/auth/token',
+            json={'user': test_server["user"], 'password': test_server["password"]}
+        ).text
     )['token']
 
-    # GET should not be allowed for security reasons (token in URL)
+    # GET should not be allowed for security reasons (token in test_server["url"])
     r = requests.get(
-        f'{URL}/astromon/regions',
+        f'{test_server["url"]}/astromon/regions',
         json={'obsid': 21156},
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -66,7 +67,7 @@ def test_regions():
 
     # POST without giving regions gets the regions
     r = requests.post(
-        f'{URL}/astromon/regions',
+        f'{test_server["url"]}/astromon/regions',
         json={'obsid': 21156},
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -77,7 +78,7 @@ def test_regions():
     # POST with regions adds them
     regions_ref = [{'obsid': 21156, 'x': 383., 'y': 361., 'radius': 5., 'comments': 'some comment'}]
     r = requests.post(
-        f'{URL}/astromon/regions',
+        f'{test_server["url"]}/astromon/regions',
         json={'obsid': 21156, 'regions': regions_ref},
         headers={"Authorization": f"Bearer {token}"}
     )
@@ -92,14 +93,14 @@ def test_regions():
     assert np.isclose(regions[0]['y'], regions_ref[0]['y'])
 
     r = requests.delete(
-        f'{URL}/astromon/regions',
+        f'{test_server["url"]}/astromon/regions',
         json={'obsid': 21156, 'regions': [r['region_id'] for r in regions]},
         headers={"Authorization": f"Bearer {token}"}
     )
     assert r.ok, 'region delete failed'
 
     r = requests.post(
-        f'{URL}/astromon/regions',
+        f'{test_server["url"]}/astromon/regions',
         json={'obsid': 21156},
         headers={"Authorization": f"Bearer {token}"}
     )

@@ -14,7 +14,7 @@ def test_server(request):
     from multiprocessing import Process
     p = Process(target=_run_app)
     p.start()
-    time.sleep(1)  # this is to let the server spin up
+    time.sleep(2)  # this is to let the server spin up
     info = {
         'url': 'http://127.0.0.1:5000',
         'user': 'test_user',
