@@ -24,19 +24,6 @@ auth = Authentication()
 logger = logging.getLogger('kadi_apps')
 
 
-class ComplexEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if np.isscalar(obj):
-            return int(obj)
-        if np.isreal(obj):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
-
-
-def encode(data):
-    return json.loads(json.dumps(dict(data), cls=ComplexEncoder))
-
-
 @blueprint.route('/regions', methods=['DELETE'])
 @auth.login_required
 def remove_regions():
