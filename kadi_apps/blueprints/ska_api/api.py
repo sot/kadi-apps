@@ -113,7 +113,7 @@ def _get_args(exclude):
 
 
 class APIEncoder(json.JSONEncoder):
-    def __init__(self, table_format=None, strict_encode=True):
+    def __init__(self, table_format=None, strict_encode=True, **kwargs):
         self.table_format = table_format or 'rows'
         super(APIEncoder, self).__init__()
         self.strict_encode = strict_encode
@@ -133,6 +133,7 @@ class APIEncoder(json.JSONEncoder):
 
     def default(self, obj):
         from astropy.table import Table
+        import numpy as np
 
         # Potentially convert something with a `table` property to an astropy Table.
         if hasattr(obj, 'table') and isinstance(obj.__class__.table, property):
@@ -140,11 +141,26 @@ class APIEncoder(json.JSONEncoder):
             if isinstance(obj_table, Table):
                 obj = obj_table
 
-        if isinstance(obj, Table):
-            out = self.encode_table(obj)
+        if type(obj) in [np.int32, np.int64]:
+            return int(obj)
+
+        elif type(obj) in [np.float32, np.float64]:
+            return float(obj)
+
+        elif isinstance(obj, np.ma.MaskedArray):
+            return {
+                'data': obj.tolist(),
+                'mask': obj.mask.tolist()
+            }
+
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+
+        elif isinstance(obj, Table):
+            return self.encode_table(obj)
 
         elif isinstance(obj, bytes):
-            out = obj.decode('utf-8')
+            return obj.decode('utf-8')
 
         else:
             try:
