@@ -30,15 +30,18 @@ class NotFound(Exception):
 
 @blueprint.route("/<path:path>")
 def api(path):
-    logger = logging.getLogger()
+    logger = logging.getLogger('kadi_apps')
     try:
         app_func = _get_function(path)
-        app_kwargs = _get_args(exclude=['table_format'])
+        app_kwargs = _get_args(exclude=[])
+        table_format = app_kwargs.pop('table_format', None)
+        strict_encode = app_kwargs.pop('strict_encode', True)
+
         logger.info(f'{path.replace("/", ".")}(')
         logger.info(f'    **{app_kwargs}')
         logger.info(f')')
 
-        dumper = APIEncoder(request.args.get('table_format', None))
+        dumper = APIEncoder(table_format=table_format, strict_encode=strict_encode)
         output = app_func(**app_kwargs)
         output = dumper.encode(output).encode('utf-8')
         return output, 200
@@ -110,9 +113,10 @@ def _get_args(exclude):
 
 
 class APIEncoder(json.JSONEncoder):
-    def __init__(self, table_format=None):
+    def __init__(self, table_format=None, strict_encode=True):
         self.table_format = table_format or 'rows'
         super(APIEncoder, self).__init__()
+        self.strict_encode = strict_encode
 
     def encode_table(self, obj):
         if self.table_format not in ('rows', 'columns'):
@@ -144,11 +148,14 @@ class APIEncoder(json.JSONEncoder):
 
         else:
             try:
-                print('OOPS')
                 out = super(APIEncoder, self).default(obj)
             except TypeError:
-                # Last gasp to never fail the JSON encoding.  This is mostly helpful
-                # for debugging instead of the inscrutable exception:
-                # TypeError: default() missing 1 required positional argument: 'o'
-                out = repr(obj)
+                if not self.strict_encode:
+                    # Last gasp to never fail the JSON encoding.  This is mostly helpful
+                    # for debugging instead of an inscrutable exception
+                    out = repr(obj)
+                else:
+                    # re-raise the same exception. This will cause a 500 error (as it should).
+                    # The entrypoint can decide to include the exception message in the response.
+                    raise
         return out
