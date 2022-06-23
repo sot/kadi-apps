@@ -41,7 +41,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(auth.blueprint, url_prefix='/auth')
     app.register_blueprint(test.blueprint, url_prefix='/test')
     app.register_blueprint(astromon.blueprint, url_prefix='/astromon')
-    app.register_blueprint(api.blueprint, url_prefix='/')
+    app.register_blueprint(api.blueprint, url_prefix='/ska_api')
 
     return app
 
