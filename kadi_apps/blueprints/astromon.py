@@ -1,9 +1,10 @@
 import logging
 import numpy as np
 import json
+import warnings
 
 from pathlib import Path
-from astropy.wcs import WCS
+from astropy.wcs import WCS, FITSFixedWarning
 from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -90,7 +91,9 @@ def add_regions():
         filename = Path(images[0]) if images else Path('image does not exist')
         if filename.exists():
             hdus = fits.open(filename)
-            wcs = WCS(hdus[0].header)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=FITSFixedWarning)
+                wcs = WCS(hdus[0].header)
             if regions is None:
                 obs = observation.Observation(
                     obsid,
@@ -165,7 +168,9 @@ def astromon():
             d[hdus[0].data > 0] = np.log10(hdus[0].data[hdus[0].data > 0])
             d[hdus[0].data <= 0] = np.log10(n_min) - 1
 
-            wcs = WCS(hdus[0].header)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=FITSFixedWarning)
+                wcs = WCS(hdus[0].header)
 
             cat_src, xray_src = _get_sources(obsid, dbfile=workdir / 'astromon.h5')
             x, y = wcs.world_to_pixel(xray_src['loc'])
