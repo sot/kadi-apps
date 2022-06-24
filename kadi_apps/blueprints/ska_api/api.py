@@ -6,13 +6,15 @@ import json
 
 
 APPS = {
+    ('agasc',): ['get_star', 'get_stars', 'get_agasc_cone'],
     ('mica', 'starcheck'): ['get_*'],
     ('mica', 'archive', 'aca_dark', 'dark_cal'): [
         'get_dark_cal_id', 'get_dark_cal_image', 'get_dark_cal_props'
     ],
     ('kadi', 'events'): ['*.filter'],
     ('kadi', 'commands'): ['get_cmds', 'get_observations', 'get_starcats'],
-    ('kadi', 'commands', 'states'): ['get_states']}
+    ('kadi', 'commands', 'states'): ['get_states']
+}
 
 
 blueprint = Blueprint('ska_api', __name__, template_folder='templates')

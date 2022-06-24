@@ -7,6 +7,52 @@ from kadi.commands import get_starcats
 from kadi.commands import get_observations
 
 
+def test_agasc_star(test_server):
+    import agasc
+    agasc_id = 2758752
+    date = '2022:001'
+    star = agasc.get_star(agasc_id)
+    api_url = f"{test_server['url']}/ska_api"
+    path = 'agasc/get_star'
+    response = requests.get(f"{api_url}/{path}?id={agasc_id}&{date=}")
+    star_api = Table(response.json())[0]
+    # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    assert list(star[cols].values()) == list(star_api[cols].values())
+
+
+def test_agasc_stars(test_server):
+    import agasc
+    agasc_ids = [44960448, 44965624, 45096160]
+    dates = ['2022:001']
+    stars = agasc.get_stars(agasc_ids)
+    api_url = f"{test_server['url']}/ska_api"
+    path = 'agasc/get_stars'
+    response = requests.get(f"{api_url}/{path}?ids={agasc_ids}&{dates=}")
+    assert response.ok, 'test_agasc_stars API request failed'
+    stars_api = Table(response.json())
+    # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    assert np.all(stars_api.as_array().astype(stars.dtype)[cols] == stars.as_array()[cols])
+
+
+def test_agasc_cone(test_server):
+    import agasc
+    ra, dec = 228.5895961, 4.9938399
+    radius = 0.15
+    date = '2022:001'
+    stars = agasc.get_agasc_cone(ra=ra, dec=dec, radius=radius, date=date)
+    api_url = f"{test_server['url']}/ska_api"
+    path = 'agasc/get_agasc_cone'
+    response = requests.get(f"{api_url}/{path}?{ra=}&{dec=}&{radius=}&{date=}")
+    stars_api = Table(response.json())
+    assert response.ok, 'test_agasc_cone API request failed'
+    assert len(stars) == len(stars_api)
+    # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    assert np.all(stars_api.as_array().astype(stars.dtype)[cols] == stars.as_array()[cols])
+
+
 def test_starcheck_att(test_server):
     from mica.starcheck import get_att
     obsid = 8008
