@@ -4,6 +4,7 @@
 """
 
 import logging
+import argparse
 
 from pathlib import Path
 
@@ -46,6 +47,17 @@ def get_app(name=__name__, settings='devel'):
     return app
 
 
-if __name__ == "__main__":
+def get_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--unit-test', action='store_const', const='unit_test', dest='settings', default='devel')
+    return parser
+
+
+def main():
     # this starts the development server
-    get_app(settings='devel').run(host='0.0.0.0')
+    args = get_parser().parse_args()
+    get_app(settings=args.settings).run(host='0.0.0.0')
+
+
+if __name__ == "__main__":
+    main()
