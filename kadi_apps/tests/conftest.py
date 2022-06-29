@@ -10,16 +10,25 @@ def _run_app():
 
 @pytest.fixture(scope="session")
 def test_server(request):
-    print('kadi_apps.tests.conftest Starting Flask App')
+    import requests
     from multiprocessing import Process
-    p = Process(target=_run_app)
-    p.start()
-    time.sleep(2)  # this is to let the server spin up
     info = {
         'url': 'http://127.0.0.1:5000',
         'user': 'test_user',
         'password': 'test_password',
     }
+    print('kadi_apps.tests.conftest Starting Flask App')
+    p = Process(target=_run_app)
+    p.start()
+    r = None
+    for i in range(20):
+        try:
+            r = requests.get(info['url'])
+            break  # if there is any response we call it a success
+        except Exception:
+            time.sleep(0.2)
+    if r is None:
+        print(f'Test server failed to start: {r}')
     yield info
     print('kadi_apps.tests.conftest Killing Flask App')
     p.kill()
