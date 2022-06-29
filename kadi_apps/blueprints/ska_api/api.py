@@ -9,7 +9,7 @@ APPS = {
     ('agasc',): ['get_star', 'get_stars', 'get_agasc_cone'],
     ('mica', 'starcheck'): ['get_*'],
     ('mica', 'archive', 'aca_dark', 'dark_cal'): [
-        'get_dark_cal_id', 'get_dark_cal_image', 'get_dark_cal_props'
+        'get_dark_cal_id', 'get_dark_cal_ids', 'get_dark_cal_image', 'get_dark_cal_props'
     ],
     ('kadi', 'events'): ['*.filter'],
     ('kadi', 'commands'): ['get_cmds', 'get_observations', 'get_starcats'],
