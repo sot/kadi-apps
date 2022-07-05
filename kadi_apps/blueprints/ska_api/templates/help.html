@@ -375,7 +375,7 @@ ul.auto-toc {
 <h1>API URL syntax</h1>
 <p>The general URL syntax for querying data via the API interface is as follows:</p>
 <pre class="literal-block">
-http://web-kadi-test.cfa.harvard.edu/api/&lt;package&gt;/&lt;module&gt;/&lt;function&gt;?&lt;arg1&gt;=&lt;val1&gt;&amp;&lt;arg2&gt;=val2...
+  {{ url_for('ska_api.api', path='asdasdasd', _external=True) }}/&lt;package&gt;/&lt;module&gt;/&lt;function&gt;?&lt;arg1&gt;=&lt;val1&gt;&amp;&lt;arg2&gt;=val2...
 </pre>
 <p>This roughly equivalent to the Python pseudo-code:</p>
 <pre class="literal-block">
@@ -383,7 +383,7 @@ from &lt;package&gt;.&lt;module&gt; import &lt;function&gt;
 &lt;function&gt;(arg1=val1, arg2=val2)
 </pre>
 <p>For example:</p>
-<p><a class="reference external" href="http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002">http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002</a></p>
+<p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}?start=2019:001&amp;stop=2019:002</a></p>
 <p>This is equivalent to the Python code:</p>
 <pre class="literal-block">
 from kadi.events import manvrs
@@ -404,14 +404,14 @@ manvrs.filter(start='2019:001', stop='2019:002')
 either a list of dicts (<tt class="docutils literal">rows</tt>) or a dict of lists (<tt class="docutils literal">columns</tt>).  For large query results the
 <tt class="docutils literal">columns</tt> option will generally be more compact because the table column names are not repeated for
 every row. For example:</p>
-<p><a class="reference external" href="http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002&amp;table_format=columns">http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002&amp;table_format=columns</a></p>
+<p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002&amp;table_format=columns">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}?start=2019:001&amp;stop=2019:002&amp;table_format=columns</a></p>
 </div>
 <div class="section" id="timing">
 <h2>Timing</h2>
 <p>A second special option is <tt class="docutils literal">report_timing</tt>, which returns timing information on the query
 instead of the query data.  This may be useful for characterizing the performance of the
 web service (which is not very speedy).  Example:</p>
-<p><a class="reference external" href="http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002&amp;report_timing=1">http://web-kadi-test.cfa.harvard.edu/api/kadi/events/manvrs/filter?start=2019:001&amp;stop=2019:002&amp;report_timing=1</a></p>
+<p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002&amp;report_timing=1">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}?start=2019:001&amp;stop=2019:002&amp;report_timing=1</a></p>
 </div>
 </div>
 <div class="section" id="available-apis">

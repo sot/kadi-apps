@@ -6,10 +6,15 @@ import json
 
 
 APPS = {
+    ('agasc',): ['get_star', 'get_stars', 'get_agasc_cone'],
     ('mica', 'starcheck'): ['get_*'],
+    ('mica', 'archive', 'aca_dark', 'dark_cal'): [
+        'get_dark_cal_id', 'get_dark_cal_ids', 'get_dark_cal_image', 'get_dark_cal_props'
+    ],
     ('kadi', 'events'): ['*.filter'],
-    ('kadi', 'commands'): ['get_cmds'],
-    ('kadi', 'commands', 'states'): ['get_states']}
+    ('kadi', 'commands'): ['get_cmds', 'get_observations', 'get_starcats'],
+    ('kadi', 'commands', 'states'): ['get_states']
+}
 
 
 blueprint = Blueprint('ska_api', __name__, template_folder='templates')
@@ -21,23 +26,33 @@ def show_help():
     return render_template('help.html')
 
 
+class NotFound(Exception):
+    pass
+
+
 @blueprint.route("/<path:path>")
 def api(path):
-    logger = logging.getLogger()
+    logger = logging.getLogger('kadi_apps')
     try:
         app_func = _get_function(path)
-        app_kwargs = _get_args(exclude=['table_format'])
+        app_kwargs = _get_args(exclude=[])
+        table_format = app_kwargs.pop('table_format', None)
+        strict_encode = app_kwargs.pop('strict_encode', True)
+
         logger.info(f'{path.replace("/", ".")}(')
         logger.info(f'    **{app_kwargs}')
         logger.info(f')')
 
-        dumper = APIEncoder(request.args.get('table_format', None))
+        dumper = APIEncoder(table_format=table_format, strict_encode=strict_encode)
         output = app_func(**app_kwargs)
         output = dumper.encode(output).encode('utf-8')
         return output, 200
+    except NotFound as e:
+        logger.info(f'NotFound: {e}')
+        return {'ok': False, 'error': str(e)}, 404
     except Exception as e:
         logger.info(f'Exception: {e}')
-        return {'ok': False, 'error': str(e)}
+        return {'ok': False, 'error': str(e)}, 500
 
 
 def _get_function(path):
@@ -65,16 +80,18 @@ def _get_function(path):
             func_parts = module_func_parts[ii + 1:]
 
     if app_module is None:
-        raise ValueError('no app module found for URL path {}'.format(path))
+        raise NotFound('no app module found for URL path {}'.format(path))
 
     if not func_parts:
-        raise ValueError('no function parts found for URL path {}'.format(path))
+        raise NotFound('no function parts found for URL path {}'.format(path))
 
     # Check that the function is allowed
     func_name = '.'.join(func_parts)
     if not any(fnmatch(func_name, app_glob) for app_glob in app_globs):
-        raise ValueError('function {} is not allowed for {}'
-                         .format(func_name, '.'.join(app_module_parts)))
+        raise NotFound(
+            'function {} was not found or is not allowed for {}'
+            .format(func_name, '.'.join(app_module_parts))
+        )
 
     app_func = app_module
     for func_part in func_parts:
@@ -98,9 +115,10 @@ def _get_args(exclude):
 
 
 class APIEncoder(json.JSONEncoder):
-    def __init__(self, table_format=None):
+    def __init__(self, table_format=None, strict_encode=True, **kwargs):
         self.table_format = table_format or 'rows'
         super(APIEncoder, self).__init__()
+        self.strict_encode = strict_encode
 
     def encode_table(self, obj):
         if self.table_format not in ('rows', 'columns'):
@@ -117,6 +135,7 @@ class APIEncoder(json.JSONEncoder):
 
     def default(self, obj):
         from astropy.table import Table
+        import numpy as np
 
         # Potentially convert something with a `table` property to an astropy Table.
         if hasattr(obj, 'table') and isinstance(obj.__class__.table, property):
@@ -124,19 +143,37 @@ class APIEncoder(json.JSONEncoder):
             if isinstance(obj_table, Table):
                 obj = obj_table
 
-        if isinstance(obj, Table):
-            out = self.encode_table(obj)
+        if type(obj) in [np.int32, np.int64]:
+            return int(obj)
+
+        elif type(obj) in [np.float32, np.float64]:
+            return float(obj)
+
+        elif isinstance(obj, np.ma.MaskedArray):
+            return {
+                'data': obj.tolist(),
+                'mask': obj.mask.tolist()
+            }
+
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+
+        elif isinstance(obj, Table):
+            return self.encode_table(obj)
 
         elif isinstance(obj, bytes):
-            out = obj.decode('utf-8')
+            return obj.decode('utf-8')
 
         else:
             try:
-                print('OOPS')
                 out = super(APIEncoder, self).default(obj)
             except TypeError:
-                # Last gasp to never fail the JSON encoding.  This is mostly helpful
-                # for debugging instead of the inscrutable exception:
-                # TypeError: default() missing 1 required positional argument: 'o'
-                out = repr(obj)
+                if not self.strict_encode:
+                    # Last gasp to never fail the JSON encoding.  This is mostly helpful
+                    # for debugging instead of an inscrutable exception
+                    out = repr(obj)
+                else:
+                    # re-raise the same exception. This will cause a 500 error (as it should).
+                    # The entrypoint can decide to include the exception message in the response.
+                    raise
         return out
