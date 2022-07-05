@@ -21,15 +21,21 @@ def test_server(request):
     p = Process(target=_run_app)
     p.start()
     r = None
-    for i in range(20):
+    errors = []
+    tries = 40
+    for _ in range(tries):
         try:
             r = requests.get(info['url'])
             break  # if there is any response we call it a success
-        except Exception:
+        except Exception as e:
+            errors.append(str(e))
             time.sleep(0.2)
     if r is None:
-        print(f'Test server failed to start: {r}')
-    yield info
-    print('kadi_apps.tests.conftest Killing Flask App')
-    p.kill()
-    print('kadi_apps.tests.conftest done')
+        p.kill()
+        error = 'timeout' if len(errors) == tries else errors[-1]
+        pytest.fail(f'Test server failed to start ({error})')
+    else:
+        yield info
+        print('kadi_apps.tests.conftest Killing Flask App')
+        p.kill()
+        print('kadi_apps.tests.conftest done')
