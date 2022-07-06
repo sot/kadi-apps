@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+
+{% block body_attributes -%}
+class="with-background"
+{%- endblock %}
+
+{% block content %}
+<p><p>
+<h1 align="center"> Star History </h1>
+
+{% if agasc_id != '' and star_info|length == 0 %}
+<div class="alert alert-danger" role="alert">
+  <h3 align="center">No AGASC entry for star "{{ agasc_id }}" </h3>
+</div>
+{% endif %}
+
+<form action="" method="get">
+  <div class="row">
+    <div class="col-sm"> </div>
+    <div class="col">
+      <div class="form-group">
+          <input type="text" class="form-control" id="agasc_id" name="agasc_id" value="{{agasc_id}}" placeholder="AGASC id">
+          &nbsp;
+      </div>
+      <div class="form-group">
+          <input type="text" class="form-control" id="start" name="start" value="{{start}}" placeholder="start time">
+          &nbsp;
+      </div>
+      <div class="form-group">
+          <input type="text" class="form-control" id="stop" name="stop" value="{{stop}}" placeholder="stop time">
+          &nbsp;  
+      </div>
+      <div class="row">
+        <div class="form-group">
+            <button type="submit" class="btn btn-secondary">Submit</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm"> </div>
+  </div>
+</form>
+
+
+{% if acq_table %}
+<h3>Acquisition History</h3>
+
+<table class='table' border=1>
+  <tr>
+    <th>date</th>
+    <th>obsid</th>
+    <th>obi</th>
+    <th>type</th>
+    <th>slot</th>
+    <th>mag</th>
+    <th>mag obs</th>
+    <th>star tracked</th>
+    <th>acq id</th>
+    <th>dy (corr)</th>
+    <th>dz (corr)</th>
+  </tr>
+  {% for acq in acq_table %}
+  {%- set obsid = '%05d' | format(acq.obsid) %}
+  <tr>
+    <td>{{ acq.date }}</td>
+    <td>
+      <a href="https://icxc.harvard.edu/aspect/mica_reports/{{ obsid[0:2] }}/{{ obsid }}/">
+        {{ acq.obsid }}
+      </a>
+    </td>
+    <td>{{ acq.obi }}</td>
+    <td>{{ acq.type }}</td>
+    <td>{{ acq.slot }}</td>
+    <td>{{ '%.3f' % acq.mag }}</td>
+    <td>{{ '%.3f' % acq.mag_obs }}</td>
+    <td>{{ acq.star_tracked }}</td>
+    <td>{{ acq.id }}</td>
+    <td>{{ '%.3f' % acq.acq_dy }}</td>
+    <td>{{ '%.3f' % acq.acq_dz }}</td>
+  </tr>
+  {%- endfor %}
+</table>
+{% endif %}
+
+{% if gui_table %}
+<h3>Guide History</h3>
+
+<p><a href="{{ reports_url }}">agasc supplement report</a></p>
+
+<b>Old mica guide stats</b>
+
+<table class='table' border=1>
+  <tr>
+    <th>date</th>
+    <th>obsid</th>
+    <th>obi</th>
+    <th>type</th>
+    <th>slot</th>
+    <th>mag</th>
+    <th>mean mag</th>
+    <th>% not track</th>
+  </tr>
+{% for gui in gui_table %}
+{%- set obsid = '%05d' | format(gui.obsid) %}
+  <tr>
+    <td>{{ gui.date }}</td>
+    <td>
+      <a href="https://icxc.harvard.edu/aspect/mica_reports/{{ obsid[0:2] }}/{{ obsid }}/">
+        {{ gui.obsid }}
+      </a>
+    </td>
+    <td>{{ gui.obi }}</td>
+    <td>{{ gui.type }}</td>
+    <td>{{ gui.slot }}</td>
+    <td>{{ '%.3f' % gui.mag }}</td>
+    <td>{{ '%.3f' % gui.mag_obs }}</td>
+    <td>{{ '%.3f' % gui.perc_not_track }}</td>
+  </tr>
+{%- endfor %}
+</table>
+{% endif %}
+{% if acq_table %}
+Notes: In the acquisition history table, "dy (corr)" and "dz (corr)" are the offset from
+the expected/commanded position in arcsecs based on the star positions after correction
+(corr) with the one-shot update.  In the acquisition and guide history tables, "mag" is
+the AGASC magnitude.
+{% endif %}
+
+{% if star_info %}
+<h3>AGASC info</h3>
+<div class="row">
+  <div class="col">
+    <table class="table" border=1>
+      {% for fname, fval in star_info[0:15] %}
+      <tr><td>{{ fname }}</td><td>{{ fval }}</td></tr>
+      {%- endfor %}
+    </table>
+  </div>
+  <div class="col">
+    <table class="table" border=1>
+      {% for fname, fval in star_info[15:30] %}
+      <tr><td>{{ fname }}</td><td>{{ fval }}</td></tr>
+      {%- endfor %}
+    </table>
+  </div>
+  <div class="col">
+    <table class="table" border=1>
+      {% for fname, fval in star_info[30:] %}
+      <tr><td>{{ fname }}</td><td>{{ fval }}</td></tr>
+      {%- endfor %}
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block body_attributes %}
+class="with-background"
+{% endblock %}
+
+{% block full_width_content %}
+<p><p>
+<h1 align="center"> Mica portal </h1>
+
+&nbsp;
+<form action="" method="get">
+  <div class="row">
+    <div class="col"></div>
+    <div class="col">
+      <label for="distance_tolerance">OBSID or Date </label>
+      <input type="text" class="form-control" name="obsid_or_date" value="{{distance_tolerance}}"> 
+    </div>
+    <div class="col"></div>
+  </div>
+</form>
+&nbsp;
+
+{% if mica_url -%}
+<iframe class="mica" src="{{mica_url | safe}}"> </iframe>
+{%- endif %}
+
+{% endblock %}
