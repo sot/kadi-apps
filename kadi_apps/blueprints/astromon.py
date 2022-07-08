@@ -140,11 +140,16 @@ def astromon():
             + list(subdir.glob('*wide_flux.img'))
         )
         filename = Path(images[0]) if images else Path('image does not exist')
-        obs = observation.Observation(
-            obsid,
-            workdir=workdir / 'archive',
-            source=None
-        )
+        try:
+            obs = observation.Observation(
+                obsid,
+                workdir=workdir / 'archive',
+                source=None
+            )
+        except Exception as e:
+            logger.info(f'Error getting data: {e}')
+            logger.info(f'workdir: {workdir}')
+            raise Exception(f'Failed to get observation data for obsid {obsid}') from None
 
         if filename.exists():
             hdus = fits.open(filename)
@@ -236,9 +241,10 @@ def astromon():
     except werkzeug.exceptions.BadRequest as e:
         logger.info(f'BadRequest in Catalog.get: {e}')
         return {'obsid': 0}, 400
-    # except Exception as e:
-    #    logger.error(f'Exception in Catalog.get: {e}')
-    #    return {'AGASC_ID': 0}, 500
+    except Exception as e:
+        msg = f'Exception in Catalog.get: {e}'
+        logger.error(msg)
+        return {'obsid': 0, 'error': msg}, 500
 
 
 class EncoderImpl(json.JSONEncoder):
