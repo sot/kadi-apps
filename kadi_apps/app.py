@@ -69,7 +69,9 @@ def get_app(name=__name__, settings='devel'):
 
 def get_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--unit-test', action='store_const', const='unit_test', dest='settings', default='devel')
+    parser.add_argument(
+        '--unit-test', action='store_const', const='unit_test', dest='settings', default='devel'
+    )
     return parser
 
 
