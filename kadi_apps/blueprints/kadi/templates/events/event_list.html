@@ -27,7 +27,13 @@
     </td>
     <td>
       <form action="{{ url_for('kadi.event_list', model_name=model_name) }}" method="get">
-      <span data-tooltip data-max-width="600" data-width="600" class="has-tip" title="{{filter_help|safe}}">Filter: ?</span>
+        <span
+          data-bs-toggle="tooltip"
+          data-bs-html="true"
+          data-bs-placement="bottom"
+          title="{{ filter_help | safe }}">
+        Filter: ?
+      </span>
         <input type="text" name="filter" value="{{filter}}" size="70">
       </form>
     </td>
