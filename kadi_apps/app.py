@@ -25,7 +25,7 @@ def internal_error(e):
 
 def get_app(name=__name__, settings='devel'):
     import kadi_apps
-    from kadi_apps.blueprints import auth, test, astromon, ska_api as api, kadi, find_attitude
+    from kadi_apps.blueprints import auth, test, ska_api as api, kadi, find_attitude
     from kadi_apps.blueprints import mica, star_hist, pcad_acq
 
     logger = pyyaks.logger.get_logger(name='kadi_apps', level='INFO')
@@ -62,7 +62,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(auth.blueprint, url_prefix='/api/auth')
     app.register_blueprint(test.blueprint, url_prefix='/api/test')
     app.register_blueprint(api.blueprint, url_prefix='/api/ska_api')
-    app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
+    # app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
 
     return app
 
