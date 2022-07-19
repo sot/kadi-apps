@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint
 from flask import request
 
 import logging
@@ -18,12 +18,6 @@ APPS = {
 
 
 blueprint = Blueprint('ska_api', __name__, template_folder='templates')
-
-
-@blueprint.route("/")
-def show_help():
-    """Return help page for web-kadi API access"""
-    return render_template('help.html')
 
 
 class NotFound(Exception):
