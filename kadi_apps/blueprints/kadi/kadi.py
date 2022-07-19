@@ -174,7 +174,7 @@ def event_detail(model_name, primary_key):
     )
 
 
-@blueprint.route("/events/<string:model_name>/list")
+@blueprint.route("/events/<string:model_name>/list/")
 def event_list(model_name):
     """Return a list of kadi events"""
 
