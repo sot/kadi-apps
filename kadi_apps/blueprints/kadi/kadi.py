@@ -64,14 +64,6 @@ def filter_events(
     return queryset
 
 
-@blueprint.route("/")
-def index():
-    """Return help page for web-kadi API access"""
-    return render_template(
-        'index.html',
-    )
-
-
 @blueprint.route("/events/")
 def events():
     """Return help page for web-kadi API access"""
@@ -182,7 +174,7 @@ def event_detail(model_name, primary_key):
     )
 
 
-@blueprint.route("/events/<string:model_name>/list")
+@blueprint.route("/events/<string:model_name>/list/")
 def event_list(model_name):
     """Return a list of kadi events"""
 

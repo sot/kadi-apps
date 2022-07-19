@@ -23,9 +23,23 @@ def internal_error(e):
     return render_template('500.html'), 500
 
 
+def index():
+    """Return main page"""
+    return render_template(
+        'index.html',
+    )
+
+
+def api_index():
+    """Return main API page"""
+    return render_template(
+        'api_index.html',
+    )
+
+
 def get_app(name=__name__, settings='devel'):
     import kadi_apps
-    from kadi_apps.blueprints import auth, test, astromon, ska_api as api, kadi, find_attitude
+    from kadi_apps.blueprints import auth, test, ska_api as api, kadi, find_attitude
     from kadi_apps.blueprints import mica, star_hist, pcad_acq
 
     logger = pyyaks.logger.get_logger(name='kadi_apps', level='INFO')
@@ -53,7 +67,10 @@ def get_app(name=__name__, settings='devel'):
     app.register_error_handler(404, page_not_found)
     app.register_error_handler(500, internal_error)
 
-    app.register_blueprint(kadi.blueprint, url_prefix='/')
+    app.add_url_rule("/", view_func=index)
+    app.add_url_rule("/api", view_func=api_index)
+
+    app.register_blueprint(kadi.blueprint, url_prefix='/kadi')
     app.register_blueprint(find_attitude.blueprint, url_prefix='/find_attitude')
     app.register_blueprint(mica.blueprint, url_prefix='/mica')
     app.register_blueprint(star_hist.blueprint, url_prefix='/star_hist')
@@ -62,7 +79,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(auth.blueprint, url_prefix='/api/auth')
     app.register_blueprint(test.blueprint, url_prefix='/api/test')
     app.register_blueprint(api.blueprint, url_prefix='/api/ska_api')
-    app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
+    # app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
 
     return app
 

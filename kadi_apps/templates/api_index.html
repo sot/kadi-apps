@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block body_attributes -%}
+class="with-background"
+{%- endblock %}
+
+{% block content %}
+<h1> Ska API </h1>
+
+<p>
+    The Ska API is a generic API that wraps a subset of the Ska3 Python API. It is accessible via
+    the <tt class="docutils literal"><span class="pre">{{ url_for('ska_api.api', path="", _external=True) }}</span></tt>
+    web interface.  The available data sets are:
+</p>
+
+<ul class="simple">
+    <li><a class="reference external" href="http://sot.github.io/agasc">AGASC catalog</a></li>
+    <li><a class="reference external" href="http://sot.github.io/mica/aca_dark_current.html">Mica archive dark cal</a></li>
+    <li><a class="reference external" href="http://sot.github.io/kadi/events.html">Kadi events</a></li>
+    <li><a class="reference external" href="http://sot.github.io/kadi/commands_states.html#chandra-states-and-continuity">Kadi states</a></li>
+    <li><a class="reference external" href="http://sot.github.io/kadi/commands_states.html#commands-archive">Kadi commands</a></li>
+    <li><a class="reference external" href="http://sot.github.io/mica/starcheck.html">Mica starcheck catalogs</a></li>
+</ul>
+
+<h2>API URL syntax</h2>
+
+<p>
+    The general URL syntax for querying data via the API interface is as follows:
+</p>
+<pre class="literal-block">
+    {{ url_for('ska_api.api', path="", _external=True) }}&lt;package&gt;/&lt;module&gt;/&lt;function&gt;?&lt;arg1&gt;=&lt;val1&gt;&amp;&lt;arg2&gt;=val2...
+</pre>
+<p>
+    This roughly equivalent to the Python pseudo-code:
+</p>
+<pre class="literal-block">
+    from &lt;package&gt;.&lt;module&gt; import &lt;function&gt;
+    &lt;function&gt;(arg1=val1, arg2=val2)
+</pre>
+
+<p>For example:</p>
+<p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}?start=2019:001&amp;stop=2019:002</a></p>
+<p>is equivalent to the Python code:</p>
+<pre class="literal-block">
+    from kadi.events import manvrs
+    manvrs.filter(start='2019:001', stop='2019:002')
+</pre>
+
+<h2>Outputs</h2>
+
+<h3>Data format</h3>
+<p>The web API query returns a JSON-encoded version of the <tt class="docutils literal">manvrs</tt> data structure
+(<tt class="docutils literal"><span class="pre">Content-type:</span> application/json</tt>).</p>
+<h3>Table format</h3>
+<p>One special option which is common to all queries is the <tt class="docutils literal">table_format</tt>, which can take the value
+<tt class="docutils literal">rows</tt> or <tt class="docutils literal">columns</tt> (default=``rows``).  This specifies whether to return any tabular data as
+either a list of dicts (<tt class="docutils literal">rows</tt>) or a dict of lists (<tt class="docutils literal">columns</tt>).  For large query results the
+<tt class="docutils literal">columns</tt> option will generally be more compact because the table column names are not repeated for
+every row. For example:</p>
+<p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002&amp;table_format=columns">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}/kadi?start=2019:001&amp;stop=2019:002&amp;table_format=columns</a></p>
+
+<h2>Available entrypoints</h2>
+<p>The full list of available entrypoints:</p>
+<pre class="literal-block">
+  {{ url_for('ska_api.api', path="") }}agasc/get_star
+  {{ url_for('ska_api.api', path="") }}agasc/get_stars
+  {{ url_for('ska_api.api', path="") }}agasc/get_star_cone
+  {{ url_for('ska_api.api', path="") }}kadi/events/&lt;event_type&gt;/filter
+  {{ url_for('ska_api.api', path="") }}kadi/commands/states/get_states
+  {{ url_for('ska_api.api', path="") }}kadi/commands/get_cmds
+  {{ url_for('ska_api.api', path="") }}kadi/commands/get_observations
+  {{ url_for('ska_api.api', path="") }}kadi/commands/get_starcats
+  {{ url_for('ska_api.api', path="") }}mica/archive/aca_dark/dark_cal/get_dark_cal_id
+  {{ url_for('ska_api.api', path="") }}mica/archive/aca_dark/dark_cal/get_dark_cal_ids
+  {{ url_for('ska_api.api', path="") }}mica/archive/aca_dark/dark_cal/get_dark_cal_image
+  {{ url_for('ska_api.api', path="") }}mica/archive/aca_dark/dark_cal/get_dark_cal_props
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_att
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_dither
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_monitor_windows
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_mp_dir
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_starcat
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_starcheck_catalog
+  {{ url_for('ska_api.api', path="") }}mica/starcheck/get_starcheck_catalog_at_date
+</pre>
+
+{% endblock %}
