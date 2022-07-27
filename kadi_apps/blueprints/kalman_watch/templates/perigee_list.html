@@ -4,5 +4,42 @@
 <p><p>
 <h1 align="center"> {{ title }} </h1>
 
+{% if prev %} <a href="{{ url_for('kalman_watch.yearly_perigees', year=prev) }}">Previous</a>{% endif %}
+{% if next %} <a href="{{ url_for('kalman_watch.yearly_perigees', year=next) }}">Next</a>{% endif %}
+
+<table class="table table-bordered table-hover srclist">
+    <tr>
+        <th>Perigee ID</th>
+        <th>Date</th>
+        <th>N&le;3 for &gt;120 s</th>
+        <th>N&le;2 for &gt;20 s</th>
+        <th>N&le;1 for &gt;10 s</th>
+        <th>N&le;3</th>
+        <th>N&le;2</th>
+        <th>N&le;1</th>
+    </tr>
+    {% for row in kalman_stats %}
+    <tr>
+        <td><a href="{{ url_for('kalman_watch.perigee', year=row.year, date=row.date) }} ">{{row.dirname}}</a> </td>
+        <td>{{row.perigee}}</td>
+        <td>{{row.n3_ints}}</td>
+        <td>{{row.n2_ints}}</td>
+        <td>{{row.n1_ints}}</td>
+        <td>{{row.n3_cnt}}</td>
+        <td>{{row.n2_cnt}}</td>
+        <td>{{row.n1_cnt}}</td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% if years %}
+<h2>Perigee plots by year</h2>
+<table>
+    <tr><th>Year</th></tr>
+    {% for year in years %}
+    <tr><td><a href="#">{{year}}</a></td></tr>
+    {% endfor %}
+</table>
+{% endif %}
 
 {% endblock %}es

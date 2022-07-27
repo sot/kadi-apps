@@ -2,7 +2,30 @@
 
 {% block content %}
 <p><p>
+{% if prev_year %} <a href="{{ url_for('kalman_watch.perigee', year=prev_year, date=prev_date) }}">Previous</a>{%endif %}
+<!-- a href="#">Index</a -->
+{% if next_year %} <a href="{{ url_for('kalman_watch.perigee', year=next_year, date=next_date) }}">Next</a>{% endif %}
 <h1 align="center"> {{ title }} </h1>
 
+{{ kalman_plot_html | safe }}
+<p></p>
+{% if has_low_kalmans %}
+<h2> Low Kalman intervals </h2>
+{{ low_kalmans_html | safe }}
+{% endif %}
+<p></p>
+<table>
+    <tr>
+        <th>Obsid</th>
+        {% for obsid in obsids %}
+    </tr>
+    <tr>
+        <td><a
+                href="https://web-kadi.cfa.harvard.edu/mica/?obsid_or_date={{obsid}}"
+                target="_blank" rel="noopener noreferrer">
+                {{obsid}} </a> </td>
+    </tr>
+    {% endfor %}
+</table>
 
 {% endblock %}es
