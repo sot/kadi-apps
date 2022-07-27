@@ -29,7 +29,7 @@ def index():
         context = {}
 
     context['kadi_version'] = __version__
-    context['distance_tolerance'] = 2.5
+    context['distance_tolerance'] = float(request.form.get('distance_tolerance', '2.5'))
 
     if context.get('solutions'):
         context['subtitle'] = ': Solution'
