@@ -67,7 +67,7 @@ def find_solutions_and_get_context():
     # No solutions, bummer.
     if not solutions:
         context['error_message'] = ('No matching solutions found.\n'
-                                    'Try increasing distance and/or magnitude tolerance.')
+                                    'Try increasing distance tolerance.')
         return context
 
     context['solutions'] = []
