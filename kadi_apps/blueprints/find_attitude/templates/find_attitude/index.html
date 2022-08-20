@@ -15,12 +15,22 @@ class="with-background"
 </form>
 
 <div class="row">
-  <div class="large-12 columns">
-    <p>Enter ACA star data below using either GRETA display A_ACA_ALL or as a simple text
-      table.<br>
-      Click Submit and wait for up to a minute for the attitude solution results.
-    </p>
-  </div>
+    <div class="large-12 columns">
+        <p>Choose one of the following options:
+        <ul>
+            <li> Enter ACA star data below using either GRETA display A_ACA_ALL
+                or as a simple text table.</li>
+            <li> Leave the Star data field blank and use MAUDE to fetch ACA star data.</li>
+            <ul>
+                <li> Enter a date to get the solution at a particular time. </li>
+                <li> Leave the date blank to get the solution at the current time.</li>
+            </ul>
+        </ul>
+        <br>
+        Click Submit and wait for up to a minute for the attitude solution
+        results.
+        </p>
+    </div>
 </div>
 
 <form action="/find_attitude/" method="post">
@@ -34,6 +44,15 @@ class="with-background"
   &nbsp;
   <div class="row">
     <div class="col">
+      <label for="date_solution">Solution date (if no Star data are supplied) </label>
+      <input type="text" class="form-control" id="date_solution" name="date_solution" value="{{date_solution}}">
+    </div>
+  </div>
+  &nbsp;
+  <div class="row">
+    <div class="col">
+     <label for="stars_text">Star data (leave blank to get star data from MAUDE) </label>
+
       <textarea
       class="form-control"
       style="font-family:Consolas,Monaco,Lucida Console,Liberation
