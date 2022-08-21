@@ -22,7 +22,7 @@ blueprint = Blueprint(
 )
 
 
-def get_stars_from_maude(date=None):
+def get_stars_from_maude(date=None, username=None, password=None):
     from maude import get_msids
     import astropy.units as u
     from cxotime import CxoTime
@@ -33,12 +33,17 @@ def get_stars_from_maude(date=None):
     msids.extend([f"aoacyan{ii}" for ii in range(8)])
     msids.extend([f"aoaczan{ii}" for ii in range(8)])
     msids.extend([f"aoacmag{ii}" for ii in range(8)])
+    kwargs = {}
+    if username:
+        kwargs['user'] = username
+    if password:
+        kwargs['password'] = password
     if date is not None:
         start = CxoTime(date)
         stop = start + 10 * u.s
-        kwargs = {'start': start, 'stop': stop}
-    else:
-        kwargs = {}
+        kwargs['start'] = start
+        kwargs['stop'] = stop
+
     dat = get_msids(msids, **kwargs)
     results = dat["data"]
     out = {}
@@ -82,9 +87,11 @@ def find_solutions_and_get_context():
     stars_text = request.form.get('stars_text', '')
     context = {}
     if stars_text.strip() == '':
+        username = request.form.get('username', 'fail')
+        password = request.form.get('password', 'fail')
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
-        stars = get_stars_from_maude(date_solution)
+        stars = get_stars_from_maude(date_solution, username, password)
 
         # Get a formatted version of the stars table that is used for finding
         # the solutions. This gets put back into the web page output.
@@ -97,6 +104,8 @@ def find_solutions_and_get_context():
         stars_context.write(out, format='ascii.fixed_width', delimiter=' ')
         context['stars_text'] = out.getvalue()
         context['date_solution'] = stars.meta['date_solution']
+        context['username'] = username
+        context['password'] = password
     else:
         context['stars_text'] = stars_text
 
