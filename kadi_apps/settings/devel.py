@@ -1,9 +1,12 @@
+import os
 
 PORT = 9000
 DEBUG = True
 TESTING = False
 
-KADI_APPS_CONFIG_DIR = '/Users/aldcroft/git/kadi-apps/config'
+assert "KADI_APPS_CONFIG_DIR" in os.environ, "KADI_APPS_CONFIG_DIR is not in environment"
+
+KADI_APPS_CONFIG_DIR = os.environ["KADI_APPS_CONFIG_DIR"]
 LOG_LEVEL = 'INFO'
 TOKEN_VERSION = (1, 0)
 
