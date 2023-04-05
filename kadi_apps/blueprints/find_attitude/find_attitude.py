@@ -87,8 +87,8 @@ def find_solutions_and_get_context():
     stars_text = request.form.get('stars_text', '')
     context = {}
     if stars_text.strip() == '':
-        username = request.form.get('username', 'fail')
-        password = request.form.get('password', 'fail')
+        username = request.form.get('username', None)
+        password = request.form.get('password', None)
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
         stars = get_stars_from_maude(date_solution, username, password)
