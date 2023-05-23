@@ -1,11 +1,14 @@
 import pytest
 import time
+import traceback
+
+from kadi_apps.app import PORT
 
 
 def _run_app():
     import kadi_apps.app
     app = kadi_apps.app.get_app(settings='unit_test')
-    app.run(host='0.0.0.0', debug=False)
+    app.run(host='0.0.0.0', debug=False, port=PORT)
 
 
 @pytest.fixture(scope="session")
@@ -13,7 +16,7 @@ def test_server(request):
     import requests
     from multiprocessing import Process
     info = {
-        'url': 'http://127.0.0.1:5000/api',
+        'url': f'http://127.0.0.1:{PORT}/api',
         'user': 'test_user',
         'password': 'test_password',
     }
@@ -22,18 +25,18 @@ def test_server(request):
     p.start()
     r = None
     errors = []
-    tries = 40
+    tries = 30
     for _ in range(tries):
         try:
+            print(f'kadi_apps.tests.conftest Trying {info["url"]}')
             r = requests.get(info['url'])
             break  # if there is any response we call it a success
-        except Exception as e:
-            errors.append(str(e))
-            time.sleep(0.2)
+        except Exception:
+            errors.append(traceback.format_exc())
+            time.sleep(1)
     if r is None:
         p.kill()
-        error = 'timeout' if len(errors) == tries else errors[-1]
-        pytest.fail(f'Test server failed to start ({error})')
+        pytest.fail(f'Test server failed to start ({errors[-1]})')
     else:
         yield info
         print('kadi_apps.tests.conftest Killing Flask App')
