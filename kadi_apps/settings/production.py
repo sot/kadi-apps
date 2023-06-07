@@ -1,3 +1,4 @@
+# PORT is not set in production
 DEBUG = False
 TESTING = False
 

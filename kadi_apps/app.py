@@ -16,9 +16,6 @@ from kadi_apps.rendering import render_template
 import pyyaks.logger
 
 
-PORT = int(os.environ.get('KADI_APPS_PORT', 9123))
-
-
 def page_not_found(e):
     return render_template('404.html'), 404
 
@@ -97,7 +94,8 @@ def get_parser():
 def main():
     # this starts the development server
     args = get_parser().parse_args()
-    get_app(settings=args.settings).run(host='0.0.0.0', port=PORT)
+    app = get_app(settings=args.settings)
+    app.run(host='0.0.0.0', port=app.config['PORT'])
 
 
 if __name__ == "__main__":
