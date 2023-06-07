@@ -1,7 +1,9 @@
+import os
 from pathlib import Path
 
 import kadi_apps
 
+PORT = int(os.environ['KADI_APPS_PORT']) if 'KADI_APPS_PORT' in os.environ else None
 DEBUG = True
 TESTING = False
 

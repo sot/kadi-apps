@@ -2,18 +2,17 @@ import pytest
 import time
 import traceback
 
-from kadi_apps.app import PORT
-
 
 def _run_app():
     import kadi_apps.app
     app = kadi_apps.app.get_app(settings='unit_test')
-    app.run(host='0.0.0.0', debug=False, port=PORT)
+    app.run(host='0.0.0.0', debug=False, port=app.config['PORT'])
 
 
 @pytest.fixture(scope="session")
 def test_server(request):
     import requests
+    from kadi_apps.settings.unit_test import PORT
     from multiprocessing import Process
     info = {
         'url': f'http://127.0.0.1:{PORT}/api',
