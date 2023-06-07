@@ -1,6 +1,10 @@
 import json
 import requests
 import numpy as np
+import pytest
+
+# Astromon is not currently installed as an app so do not test
+pytest.skip(allow_module_level=True)
 
 
 def test_matches(test_server):

@@ -108,6 +108,31 @@ def _get_args(exclude):
     return app_kwargs
 
 
+def _replace_object_cols_with_str(tbl):
+    """Replace object cols in ``tbl`` with the str representation
+
+    This only applies for columns that cannot be represented as JSON.
+
+    :returns: Table
+        Either the original table or a copy of the original table with the
+        object columns replaced with str representations.
+    """
+    object_type_colnames = [
+        name for name in tbl.colnames if tbl[name].dtype.kind == 'O'
+    ]
+
+    if object_type_colnames:
+        tbl = tbl.copy()
+        for name in object_type_colnames:
+            vals = tbl[name].tolist()
+            try:
+                json.dumps(vals)
+            except Exception:
+                tbl[name] = [str(val) for val in tbl[name]]
+
+    return tbl
+
+
 class APIEncoder(json.JSONEncoder):
     def __init__(self, table_format=None, strict_encode=True, **kwargs):
         self.table_format = table_format or 'rows'
@@ -117,6 +142,8 @@ class APIEncoder(json.JSONEncoder):
     def encode_table(self, obj):
         if self.table_format not in ('rows', 'columns'):
             raise ValueError('table_format={} not allowed'.format(self.table_format))
+
+        obj = _replace_object_cols_with_str(obj)
 
         out = {name: obj[name].tolist() for name in obj.colnames}
 

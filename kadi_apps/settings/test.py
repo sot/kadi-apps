@@ -1,5 +1,5 @@
 
-PORT = 9000
+# PORT is not set in test
 DEBUG = True
 TESTING = False
 

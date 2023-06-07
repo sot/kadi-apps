@@ -5,6 +5,7 @@
 
 import logging
 import argparse
+import os
 
 from pathlib import Path
 
@@ -93,7 +94,8 @@ def get_parser():
 def main():
     # this starts the development server
     args = get_parser().parse_args()
-    get_app(settings=args.settings).run(host='0.0.0.0')
+    app = get_app(settings=args.settings)
+    app.run(host='0.0.0.0', port=app.config['PORT'])
 
 
 if __name__ == "__main__":

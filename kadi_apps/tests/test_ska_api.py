@@ -6,6 +6,8 @@ from astropy.table import Table
 from kadi.commands import get_starcats
 from kadi.commands import get_observations
 
+from kadi_apps.blueprints.ska_api.api import _replace_object_cols_with_str
+
 
 def test_agasc_star(test_server):
     import agasc
@@ -19,6 +21,21 @@ def test_agasc_star(test_server):
     # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
     cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
     assert list(star[cols].values()) == list(star_api[cols].values())
+
+
+def test_kadi_states(test_server):
+    from kadi.commands.states import get_states
+    start = "2023:100"
+    stop = "2023:101"
+    states = get_states(start=start, stop=stop)
+    states = _replace_object_cols_with_str(states)
+    api_url = f"{test_server['url']}/ska_api"
+    path = "kadi/commands/states/get_states"
+    response = requests.get(f"{api_url}/{path}?{start=}&{stop=}")
+    states_api = Table(response.json())
+    assert states.colnames == states_api.colnames
+    for col in states.colnames:
+        assert np.all(states[col] == states_api[col])
 
 
 def test_agasc_stars(test_server):
@@ -119,14 +136,10 @@ def test_starcheck_monitor_windows(test_server):
     start, stop = '2010:010', '2010:020'
     path = 'mica/starcheck/get_monitor_windows'
 
-    windows = get_monitor_windows(start, stop)
+    windows: Table = get_monitor_windows(start, stop)
     response = requests.get(f"{api_url}/{path}?{start=}&{stop=}")
-    windows_api = response.json()
-    windows_api[0]['catalog']['warnings'] = Table(windows_api[0]['catalog']['warnings'])
-    windows_api[0]['catalog']['cat'] = Table(windows_api[0]['catalog']['cat'])
-    windows_api[0]['catalog']['manvr'] = Table(windows_api[0]['catalog']['manvr'])
-    windows_api = Table(windows_api)
-    keys = list(windows.keys())
+    windows_api = Table(response.json())
+    keys = list(windows.colnames)
     keys.remove('catalog')
 
     assert np.all(windows[keys] == windows_api[keys])
