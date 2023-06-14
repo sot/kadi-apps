@@ -112,6 +112,6 @@ def test_private(test_server):
     data = json.loads(r.text)
 
     claims = jwt.decode(token, options={"verify_signature": False}, algorithms="none")
-    unsigned_token = jwt.encode(claims, None, algorithm=None).decode()
+    unsigned_token = jwt.encode(claims, None, algorithm=None)
     headers = {"Authorization": f"Bearer {unsigned_token}"}
     assert not r.ok

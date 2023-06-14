@@ -29,7 +29,7 @@ def _check_token(token):
         if tuple(data['version']) >= current_app.config['TOKEN_VERSION']:
             return data
     except Exception as e:
-        print(e)
+        print(f"Error checking token: {e}")
     return {}
 
 
@@ -37,21 +37,24 @@ def _check_token(token):
 def token():
     logging.getLogger('kadi_apps').info('Getting token')
 
-    parse = reqparse.RequestParser()
-    parse.add_argument('user')
-    parse.add_argument('password')
-    args = parse.parse_args()
-
+    try:
+        args = request.get_json()
+    except:
+        args = {}
+    user = args.get('user', None)
+    password = args.get('password', None)
     cookie = request.cookies.get('refresh_token')
     refresh_token_payload = _check_token(cookie)
     cookie_is_valid = cookie is not None and refresh_token_payload
 
-    ok = bool(cookie_is_valid) | _check_password(args.user, args.password)
+    ok = bool(cookie_is_valid)
+    if user is not None and password is not None:
+        ok |= _check_password(user, password)
     if not ok:
         return {'ok': False, 'message': '403 (forbidden)'}, 403
-    user = refresh_token_payload['user'] if refresh_token_payload else args.user
+    user = refresh_token_payload['user'] if refresh_token_payload else user
 
-    encoded_jwt = generate_token(
+    token = generate_token(
         user, current_app.config['JWT_SECRET'], validity=datetime.timedelta(minutes=10)
     )
 
@@ -68,7 +71,7 @@ def token():
             )
             return response
 
-    return {'ok': True, 'token': encoded_jwt.decode()}, 200
+    return {'ok': True, 'token': token}, 200
 
 
 @blueprint.route('/logout', methods=['POST'])

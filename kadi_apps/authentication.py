@@ -63,12 +63,12 @@ def generate_token(user, secret, validity=None):
     }
     if validity is not None:
         payload['exp'] = datetime.datetime.utcnow() + validity
-    encoded_jwt = jwt.encode(
+    token = jwt.encode(
         payload,
         secret,
         algorithm="HS256"
     )
-    return encoded_jwt
+    return token
 
 
 def decode_token(token):
