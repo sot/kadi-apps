@@ -6,6 +6,7 @@
 import logging
 import argparse
 import os
+import dotenv
 
 from pathlib import Path
 
@@ -53,7 +54,11 @@ def get_app(name=__name__, settings='devel'):
 
     CORS(app, supports_credentials=True)  # resources={r"*": {"origins": "http://kadi-dev:3000/*"}})
 
+    dotenv_file = Path(f'.env_{settings}')
     settings = f'kadi_apps.settings.{settings}'
+    if dotenv_file.exists():
+        logger.info(f"loading {dotenv_file.absolute()}")
+        dotenv.load_dotenv(dotenv_file)
     logger.info(f'Loading Ska app settings from {settings}')
     app.config.from_object(settings)
     if 'KADI_APPS_CONFIG_DIR' in app.config:
