@@ -37,20 +37,6 @@ def encode(data):
     return json.loads(json.dumps(dict(data), cls=ComplexEncoder))
 
 
-def parser():
-    """
-    Get request parser.
-
-    Returns
-    -------
-    reqparse.RequestParser
-    """
-    from flask_restful import reqparse
-    parse = reqparse.RequestParser()
-    parse.add_argument('obsid', help='ID of the observation', type=int, default=21313)
-    return parse
-
-
 @blueprint.route('/regions', methods=['DELETE'])
 @auth.login_required
 def remove_regions():
@@ -141,8 +127,10 @@ def astromon():
     try:
         logger.info('astromon.get')
         workdir = Path(current_app.config['ASTROMON_OBS_DATA'])
-        args = parser().parse_args()
-        obsid = args.obsid
+        obsid = request.args.get('obsid', type=int)
+        if obsid is None:
+            logger.info('astromon.get with no valid OBSID')
+            return {'obsid': None}, 400
         logger.info(f'OBSID: {obsid}')
         subdir = (
             workdir / 'archive' / f'obs{int(obsid)//1000:02d}' / str(obsid) / 'images'

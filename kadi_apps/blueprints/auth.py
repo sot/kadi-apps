@@ -4,7 +4,6 @@ import datetime
 import json
 
 from flask import Blueprint, request
-from flask_restful import reqparse
 from flask import current_app, after_this_request
 from werkzeug.security import check_password_hash
 
@@ -44,10 +43,10 @@ def token():
     user = args.get('user', None)
     password = args.get('password', None)
     cookie = request.cookies.get('refresh_token')
-    refresh_token_payload = _check_token(cookie)
-    cookie_is_valid = cookie is not None and refresh_token_payload
+    refresh_token_payload = _check_token(cookie) if cookie else {}
+    cookie_is_valid = bool(cookie is not None and refresh_token_payload)
 
-    ok = bool(cookie_is_valid)
+    ok = cookie_is_valid
     if user is not None and password is not None:
         ok |= _check_password(user, password)
     if not ok:
