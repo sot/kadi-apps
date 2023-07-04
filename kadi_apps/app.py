@@ -93,6 +93,7 @@ def get_app(name=__name__, settings='devel'):
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_const', const='unit_test', dest='settings', default='devel')
+    parser.add_argument('--ssl', action='store_const', const='adhoc', default=None)
     return parser
 
 
@@ -100,7 +101,7 @@ def main():
     # this starts the development server
     args = get_parser().parse_args()
     app = get_app(settings=args.settings)
-    app.run(host='0.0.0.0', port=app.config['PORT'])
+    app.run(host='0.0.0.0', port=app.config['PORT'], ssl_context=args.ssl)
 
 
 if __name__ == "__main__":
