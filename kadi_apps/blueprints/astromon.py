@@ -37,8 +37,9 @@ def remove_regions():
         db.remove_regions(regions, dbfile=workdir / 'astromon.h5')
         return {'regions': regions}, 200
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.add_regions: {e}')
-        return {'regions': []}, 400
+        msg = f'Bad request in astromon/regions/delete: {e}'
+        logger.info(msg)
+        return {'regions': [], 'error': msg}, 400
 
 
 @blueprint.route('/regions', methods=['POST'])
@@ -104,11 +105,13 @@ def add_regions():
                     cls=Encoder('rows')
                 ))
                 return {'regions': new_regions, 'ok': True}, 200
-        logger.info(f'Image file for OBSID {obsid} does not exist')
-        return {'regions': [], 'ok': False}, 404
+        msg = f'Image file for OBSID {obsid} does not exist'
+        logger.info(msg)
+        return {'regions': [], 'ok': False, 'error': msg}, 404
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.add_regions: {e}')
-        return {'region_id': -1}, 400
+        msg = f'Bad request in astromon/regions/post: {e}'
+        logger.info(msg)
+        return {'region_id': -1, 'error': msg}, 400
 
 
 @blueprint.route('/', methods=['GET'])
@@ -119,8 +122,9 @@ def astromon():
         workdir = Path(current_app.config['ASTROMON_OBS_DATA'])
         obsid = request.args.get('obsid', type=int)
         if obsid is None:
-            logger.info('astromon.get with no valid OBSID')
-            return {'obsid': None}, 400
+            msg = 'astromon.get with no valid OBSID'
+            logger.info(msg)
+            return {'obsid': None, 'error': msg}, 400
         logger.info(f'OBSID: {obsid}')
         subdir = (
             workdir / 'archive' / f'obs{int(obsid)//1000:02d}' / str(obsid) / 'images'
@@ -229,12 +233,13 @@ def astromon():
             }
             return result, 200
         else:
-            return {'obsid': obsid}, 404
+            return {'obsid': obsid, 'error': f'No file for OBSID={obsid}'}, 404
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.get: {e}')
-        return {'obsid': 0}, 400
+        msg = f'Bad request in astromon/get: {e}'
+        logger.info(msg)
+        return {'obsid': 0, 'error': msg}, 400
     except Exception as e:
-        msg = f'Exception in Catalog.get: {e}'
+        msg = f'Exception in astromon/get: {e}'
         logger.error(msg)
         return {'obsid': 0, 'error': msg}, 500
 
@@ -289,8 +294,9 @@ def matches():
         }
         return result, 200
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in matches.get: {e}')
-        return {'matches': [], 'time_range': []}, 400
+        msg = f'Bad request in astromon/matches/get: {e}'
+        logger.info(msg)
+        return {'matches': [], 'time_range': [], 'error': msg}, 400
 
 
 def _get_regions(loc, obsid, dbfile=None):
