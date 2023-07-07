@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 # Astromon is not currently installed as an app so do not test
-pytest.skip(allow_module_level=True)
+# pytest.skip(allow_module_level=True)
 
 
 def test_matches(test_server):
@@ -34,9 +34,9 @@ def test_obsid(test_server):
     )
     token = json.loads(r.text)['token']
 
+    # No JSON: an HTTP get request shouldn't have a body
     r = requests.get(
-        f'{test_server["url"]}/astromon',
-        json={'obsid': 8008},
+        f'{test_server["url"]}/astromon?obsid=8008',
         headers={"Authorization": f"Bearer {token}"}
     )
     assert r.ok
