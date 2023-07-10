@@ -53,12 +53,24 @@ def token():
         return {'ok': False, 'message': '403 (forbidden)'}, 403
     user = refresh_token_payload['user'] if refresh_token_payload else user
 
+    token_validity = datetime.timedelta(minutes=10)
     token = generate_token(
-        user, current_app.config['JWT_SECRET'], validity=datetime.timedelta(minutes=10)
+        user, current_app.config['JWT_SECRET'], validity=token_validity
     )
 
-    if not cookie_is_valid:
-        refresh_token = generate_token(user, current_app.config['JWT_SECRET'])
+    expiring_refresh_token = 'exp' not in refresh_token_payload
+    if refresh_token_payload and not expiring_refresh_token:
+        dt = datetime.datetime.fromtimestamp(refresh_token_payload['exp']) - datetime.datetime.utcnow()
+        if dt > datetime.timedelta() and dt < datetime.timedelta(30):
+            # refresh token has only 30 days left,
+            # so it will be automatically refreshed.
+            expiring_refresh_token = True
+    if expiring_refresh_token or not cookie_is_valid:
+        refresh_token = generate_token(
+            user,
+            current_app.config['JWT_SECRET'],
+            validity=datetime.timedelta(days=365)
+        )
 
         @after_this_request
         def set_cookie(response):
@@ -70,7 +82,12 @@ def token():
             )
             return response
 
-    return {'ok': True, 'token': token}, 200
+    return {
+        'ok': True,
+        'access_token': token,
+        'token_type': 'bearer',
+        'expires_in': token_validity.seconds,
+    }, 200
 
 
 @blueprint.route('/logout', methods=['POST'])
