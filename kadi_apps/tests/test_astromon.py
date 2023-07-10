@@ -32,7 +32,7 @@ def test_obsid(test_server):
         f'{test_server["url"]}/auth/token',
         json={'user': test_server["user"], 'password': test_server["password"]}
     )
-    token = json.loads(r.text)['token']
+    token = json.loads(r.text)['access_token']
 
     # No JSON: an HTTP get request shouldn't have a body
     r = requests.get(
@@ -58,7 +58,7 @@ def test_regions(test_server):
             f'{test_server["url"]}/auth/token',
             json={'user': test_server["user"], 'password': test_server["password"]}
         ).text
-    )['token']
+    )['access_token']
 
     # GET should not be allowed for security reasons (token in test_server["url"])
     r = requests.get(
