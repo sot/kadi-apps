@@ -72,7 +72,8 @@ def add_regions():
                 obs = observation.Observation(
                     obsid,
                     workdir=workdir / 'archive',
-                    source=None
+                    source=None,  # no data source (arc5gl or archive, so nothing is downloaded)
+                    use_ciao=False,  # don't use ciao to do any processing
                 )
                 obspar = obs.get_obspar()
                 loc = SkyCoord(obspar['ra'] * u.deg, obspar['dec'] * u.deg)
@@ -138,7 +139,8 @@ def astromon():
             obs = observation.Observation(
                 obsid,
                 workdir=workdir / 'archive',
-                source=None
+                source=None,  # no data source (arc5gl or archive, so nothing is downloaded)
+                use_ciao=False,  # don't use ciao to do any processing
             )
         except Exception as e:
             logger.info(f'Error getting data: {e}')
