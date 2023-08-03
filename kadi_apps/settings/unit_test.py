@@ -1,4 +1,5 @@
 import os
+import datetime
 from pathlib import Path
 
 import kadi_apps
@@ -14,3 +15,7 @@ KADI_APPS_CONFIG_DIR = os.environ.get(
 
 LOG_LEVEL = 'INFO'
 TOKEN_VERSION = (1, 0)
+
+TOKEN_VALIDITY = datetime.timedelta(minutes=10)
+REFRESH_TOKEN_VALIDITY=datetime.timedelta(days=365)
+REFRESH_TOKEN_MARGIN = datetime.timedelta(days=10)

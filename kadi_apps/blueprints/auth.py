@@ -53,23 +53,25 @@ def token():
         return {'ok': False, 'message': '403 (forbidden)'}, 403
     user = refresh_token_payload['user'] if refresh_token_payload else user
 
-    token_validity = datetime.timedelta(minutes=10)
+    token_validity = current_app.config['TOKEN_VALIDITY']
     token = generate_token(
         user, current_app.config['JWT_SECRET'], validity=token_validity
     )
 
-    expiring_refresh_token = 'exp' not in refresh_token_payload
-    if refresh_token_payload and not expiring_refresh_token:
-        dt = datetime.datetime.fromtimestamp(refresh_token_payload['exp']) - datetime.datetime.utcnow()
-        if dt > datetime.timedelta() and dt < datetime.timedelta(30):
-            # refresh token has only 30 days left,
-            # so it will be automatically refreshed.
-            expiring_refresh_token = True
+    expiring_refresh_token = False
+    if refresh_token_payload and 'exp' in refresh_token_payload:
+        # the time left in the refresh token must be less than the margin and larger than zero,
+        # so it will be automatically refreshed.
+        dt = datetime.datetime.fromtimestamp(refresh_token_payload['exp']) - datetime.datetime.now()
+        logging.getLogger('kadi_apps').info(f'time left in refresh token: {dt}')
+        expiring_refresh_token = (dt > datetime.timedelta() and dt < current_app.config['REFRESH_TOKEN_MARGIN'])
+
     if expiring_refresh_token or not cookie_is_valid:
+        logging.getLogger('kadi_apps').info('Getting refresh token')
         refresh_token = generate_token(
             user,
             current_app.config['JWT_SECRET'],
-            validity=datetime.timedelta(days=365)
+            validity=current_app.config['REFRESH_TOKEN_VALIDITY']
         )
 
         @after_this_request
