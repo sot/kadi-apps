@@ -46,8 +46,8 @@ def test_token(test_server):
     assert r.status_code == 200
     assert 'refresh_token' not in r.cookies  # i.e.: it is not being changed
     data = json.loads(r.text)
-    assert 'token' in data
-    token = data['token']
+    assert 'access_token' in data
+    token = data['access_token']
 
     # this is how tokens are used in the header:
     headers = {"Authorization": f"Bearer {token}"}
@@ -96,8 +96,8 @@ def test_private(test_server):
     )
     assert r.ok
     data = json.loads(r.text)
-    assert 'token' in data
-    token = data['token']
+    assert 'access_token' in data
+    token = data['access_token']
 
     # wrong token
     headers = {"Authorization": f"Bearer some_garbage_here"}
@@ -112,6 +112,6 @@ def test_private(test_server):
     data = json.loads(r.text)
 
     claims = jwt.decode(token, options={"verify_signature": False}, algorithms="none")
-    unsigned_token = jwt.encode(claims, None, algorithm=None).decode()
+    unsigned_token = jwt.encode(claims, None, algorithm=None)
     headers = {"Authorization": f"Bearer {unsigned_token}"}
     assert not r.ok

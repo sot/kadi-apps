@@ -4,7 +4,6 @@ import datetime
 import json
 
 from flask import Blueprint, request
-from flask_restful import reqparse
 from flask import current_app, after_this_request
 from werkzeug.security import check_password_hash
 
@@ -29,7 +28,7 @@ def _check_token(token):
         if tuple(data['version']) >= current_app.config['TOKEN_VERSION']:
             return data
     except Exception as e:
-        print(e)
+        print(f"Error checking token: {e}")
     return {}
 
 
@@ -37,26 +36,43 @@ def _check_token(token):
 def token():
     logging.getLogger('kadi_apps').info('Getting token')
 
-    parse = reqparse.RequestParser()
-    parse.add_argument('user')
-    parse.add_argument('password')
-    args = parse.parse_args()
-
+    try:
+        args = request.get_json()
+    except:
+        args = {}
+    user = args.get('user', None)
+    password = args.get('password', None)
     cookie = request.cookies.get('refresh_token')
-    refresh_token_payload = _check_token(cookie)
-    cookie_is_valid = cookie is not None and refresh_token_payload
+    refresh_token_payload = _check_token(cookie) if cookie else {}
+    cookie_is_valid = bool(cookie is not None and refresh_token_payload)
 
-    ok = bool(cookie_is_valid) | _check_password(args.user, args.password)
+    ok = cookie_is_valid
+    if user is not None and password is not None:
+        ok |= _check_password(user, password)
     if not ok:
         return {'ok': False, 'message': '403 (forbidden)'}, 403
-    user = refresh_token_payload['user'] if refresh_token_payload else args.user
+    user = refresh_token_payload['user'] if refresh_token_payload else user
 
-    encoded_jwt = generate_token(
-        user, current_app.config['JWT_SECRET'], validity=datetime.timedelta(minutes=10)
+    token_validity = current_app.config['TOKEN_VALIDITY']
+    token = generate_token(
+        user, current_app.config['JWT_SECRET'], validity=token_validity
     )
 
-    if not cookie_is_valid:
-        refresh_token = generate_token(user, current_app.config['JWT_SECRET'])
+    expiring_refresh_token = False
+    if refresh_token_payload and 'exp' in refresh_token_payload:
+        # the time left in the refresh token must be less than the margin and larger than zero,
+        # so it will be automatically refreshed.
+        dt = datetime.datetime.fromtimestamp(refresh_token_payload['exp']) - datetime.datetime.now()
+        logging.getLogger('kadi_apps').info(f'time left in refresh token: {dt}')
+        expiring_refresh_token = (dt > datetime.timedelta() and dt < current_app.config['REFRESH_TOKEN_MARGIN'])
+
+    if expiring_refresh_token or not cookie_is_valid:
+        logging.getLogger('kadi_apps').info('Getting refresh token')
+        refresh_token = generate_token(
+            user,
+            current_app.config['JWT_SECRET'],
+            validity=current_app.config['REFRESH_TOKEN_VALIDITY']
+        )
 
         @after_this_request
         def set_cookie(response):
@@ -68,7 +84,12 @@ def token():
             )
             return response
 
-    return {'ok': True, 'token': encoded_jwt.decode()}, 200
+    return {
+        'ok': True,
+        'access_token': token,
+        'token_type': 'bearer',
+        'expires_in': token_validity.seconds,
+    }, 200
 
 
 @blueprint.route('/logout', methods=['POST'])

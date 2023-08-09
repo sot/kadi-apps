@@ -1,4 +1,5 @@
 import os
+import datetime
 from pathlib import Path
 
 import kadi_apps
@@ -15,3 +16,7 @@ LOG_LEVEL = 'INFO'
 TOKEN_VERSION = (1, 0)
 
 SEND_FILE_MAX_AGE_DEFAULT = 5
+
+TOKEN_VALIDITY = datetime.timedelta(seconds=10)
+REFRESH_TOKEN_VALIDITY = datetime.timedelta(minutes=2)
+REFRESH_TOKEN_MARGIN = datetime.timedelta(seconds=20)

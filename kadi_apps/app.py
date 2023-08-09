@@ -6,6 +6,7 @@
 import logging
 import argparse
 import os
+import dotenv
 
 from pathlib import Path
 
@@ -41,7 +42,7 @@ def api_index():
 def get_app(name=__name__, settings='devel'):
     import kadi_apps
     from kadi_apps.blueprints import auth, test, ska_api as api, kadi, find_attitude
-    from kadi_apps.blueprints import mica, star_hist, pcad_acq
+    from kadi_apps.blueprints import mica, star_hist, pcad_acq, astromon
 
     logger = pyyaks.logger.get_logger(name='kadi_apps', level='INFO')
     msg = f'Starting Kadi Apps version {kadi_apps.__version__}'
@@ -53,7 +54,11 @@ def get_app(name=__name__, settings='devel'):
 
     CORS(app, supports_credentials=True)  # resources={r"*": {"origins": "http://kadi-dev:3000/*"}})
 
+    dotenv_file = Path(f'.env_{settings}')
     settings = f'kadi_apps.settings.{settings}'
+    if dotenv_file.exists():
+        logger.info(f"loading {dotenv_file.absolute()}")
+        dotenv.load_dotenv(dotenv_file)
     logger.info(f'Loading Ska app settings from {settings}')
     app.config.from_object(settings)
     if 'KADI_APPS_CONFIG_DIR' in app.config:
@@ -80,7 +85,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(auth.blueprint, url_prefix='/api/auth')
     app.register_blueprint(test.blueprint, url_prefix='/api/test')
     app.register_blueprint(api.blueprint, url_prefix='/api/ska_api')
-    # app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
+    app.register_blueprint(astromon.blueprint, url_prefix='/api/astromon')
 
     return app
 
@@ -88,6 +93,7 @@ def get_app(name=__name__, settings='devel'):
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--unit-test', action='store_const', const='unit_test', dest='settings', default='devel')
+    parser.add_argument('--ssl', action='store_const', const='adhoc', default=None)
     return parser
 
 
@@ -95,7 +101,7 @@ def main():
     # this starts the development server
     args = get_parser().parse_args()
     app = get_app(settings=args.settings)
-    app.run(host='0.0.0.0', port=app.config['PORT'])
+    app.run(host='0.0.0.0', port=app.config['PORT'], ssl_context=args.ssl)
 
 
 if __name__ == "__main__":

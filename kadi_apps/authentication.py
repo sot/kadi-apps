@@ -17,8 +17,10 @@ class Authentication:
         try:
             assert 'Authorization' in request.headers, 'a valid token is missing'
             token = request.headers['Authorization'].split()[-1]
-            if token == 'null':  # this is the javascript "null" to which the token is initialized
-                {'ok': False, 'message': 'Token is null'}
+            # "null" corresponds to the javascript "null" to which the token is initialized
+            # "undefined" is also possible.
+            if token == 'null' or token == 'undefined': 
+                return {'ok': False, 'message': f'Token is "{token}"'}
             data = decode_token(token)
             if not data:
                 raise Exception('Token version is not valid')
@@ -63,12 +65,12 @@ def generate_token(user, secret, validity=None):
     }
     if validity is not None:
         payload['exp'] = datetime.datetime.utcnow() + validity
-    encoded_jwt = jwt.encode(
+    token = jwt.encode(
         payload,
         secret,
         algorithm="HS256"
     )
-    return encoded_jwt
+    return token
 
 
 def decode_token(token):

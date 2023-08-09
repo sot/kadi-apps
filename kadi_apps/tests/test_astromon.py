@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 # Astromon is not currently installed as an app so do not test
-pytest.skip(allow_module_level=True)
+# pytest.skip(allow_module_level=True)
 
 
 def test_matches(test_server):
@@ -32,11 +32,11 @@ def test_obsid(test_server):
         f'{test_server["url"]}/auth/token',
         json={'user': test_server["user"], 'password': test_server["password"]}
     )
-    token = json.loads(r.text)['token']
+    token = json.loads(r.text)['access_token']
 
+    # No JSON: an HTTP get request shouldn't have a body
     r = requests.get(
-        f'{test_server["url"]}/astromon',
-        json={'obsid': 8008},
+        f'{test_server["url"]}/astromon?obsid=8008',
         headers={"Authorization": f"Bearer {token}"}
     )
     assert r.ok
@@ -58,7 +58,7 @@ def test_regions(test_server):
             f'{test_server["url"]}/auth/token',
             json={'user': test_server["user"], 'password': test_server["password"]}
         ).text
-    )['token']
+    )['access_token']
 
     # GET should not be allowed for security reasons (token in test_server["url"])
     r = requests.get(

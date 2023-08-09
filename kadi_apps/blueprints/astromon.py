@@ -1,9 +1,10 @@
 import logging
 import numpy as np
 import json
+import warnings
 
 from pathlib import Path
-from astropy.wcs import WCS
+from astropy.wcs import WCS, FITSFixedWarning
 from astropy.io import fits
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -24,33 +25,6 @@ auth = Authentication()
 logger = logging.getLogger('kadi_apps')
 
 
-class ComplexEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if np.isscalar(obj):
-            return int(obj)
-        if np.isreal(obj):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
-
-
-def encode(data):
-    return json.loads(json.dumps(dict(data), cls=ComplexEncoder))
-
-
-def parser():
-    """
-    Get request parser.
-
-    Returns
-    -------
-    reqparse.RequestParser
-    """
-    from flask_restful import reqparse
-    parse = reqparse.RequestParser()
-    parse.add_argument('obsid', help='ID of the observation', type=int, default=21313)
-    return parse
-
-
 @blueprint.route('/regions', methods=['DELETE'])
 @auth.login_required
 def remove_regions():
@@ -63,8 +37,9 @@ def remove_regions():
         db.remove_regions(regions, dbfile=workdir / 'astromon.h5')
         return {'regions': regions}, 200
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.add_regions: {e}')
-        return {'regions': []}, 400
+        msg = f'Bad request in astromon/regions/delete: {e}'
+        logger.info(msg)
+        return {'regions': [], 'error': msg}, 400
 
 
 @blueprint.route('/regions', methods=['POST'])
@@ -90,12 +65,15 @@ def add_regions():
         filename = Path(images[0]) if images else Path('image does not exist')
         if filename.exists():
             hdus = fits.open(filename)
-            wcs = WCS(hdus[0].header)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=FITSFixedWarning)
+                wcs = WCS(hdus[0].header)
             if regions is None:
                 obs = observation.Observation(
                     obsid,
                     workdir=workdir / 'archive',
-                    source=None
+                    source=None,  # no data source (arc5gl or archive, so nothing is downloaded)
+                    use_ciao=False,  # don't use ciao to do any processing
                 )
                 obspar = obs.get_obspar()
                 loc = SkyCoord(obspar['ra'] * u.deg, obspar['dec'] * u.deg)
@@ -128,11 +106,13 @@ def add_regions():
                     cls=Encoder('rows')
                 ))
                 return {'regions': new_regions, 'ok': True}, 200
-        logger.info(f'Image file for OBSID {obsid} does not exist')
-        return {'regions': [], 'ok': False}, 404
+        msg = f'Image file for OBSID {obsid} does not exist'
+        logger.info(msg)
+        return {'regions': [], 'ok': False, 'error': msg}, 404
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.add_regions: {e}')
-        return {'region_id': -1}, 400
+        msg = f'Bad request in astromon/regions/post: {e}'
+        logger.info(msg)
+        return {'region_id': -1, 'error': msg}, 400
 
 
 @blueprint.route('/', methods=['GET'])
@@ -141,8 +121,11 @@ def astromon():
     try:
         logger.info('astromon.get')
         workdir = Path(current_app.config['ASTROMON_OBS_DATA'])
-        args = parser().parse_args()
-        obsid = args.obsid
+        obsid = request.args.get('obsid', type=int)
+        if obsid is None:
+            msg = 'astromon.get with no valid OBSID'
+            logger.info(msg)
+            return {'obsid': None, 'error': msg}, 400
         logger.info(f'OBSID: {obsid}')
         subdir = (
             workdir / 'archive' / f'obs{int(obsid)//1000:02d}' / str(obsid) / 'images'
@@ -152,11 +135,17 @@ def astromon():
             + list(subdir.glob('*wide_flux.img'))
         )
         filename = Path(images[0]) if images else Path('image does not exist')
-        obs = observation.Observation(
-            obsid,
-            workdir=workdir / 'archive',
-            source=None
-        )
+        try:
+            obs = observation.Observation(
+                obsid,
+                workdir=workdir / 'archive',
+                source=None,  # no data source (arc5gl or archive, so nothing is downloaded)
+                use_ciao=False,  # don't use ciao to do any processing
+            )
+        except Exception as e:
+            logger.info(f'Error getting data: {e}')
+            logger.info(f'workdir: {workdir}')
+            raise Exception(f'Failed to get observation data for obsid {obsid}') from None
 
         if filename.exists():
             hdus = fits.open(filename)
@@ -165,7 +154,9 @@ def astromon():
             d[hdus[0].data > 0] = np.log10(hdus[0].data[hdus[0].data > 0])
             d[hdus[0].data <= 0] = np.log10(n_min) - 1
 
-            wcs = WCS(hdus[0].header)
+            with warnings.catch_warnings():
+                warnings.filterwarnings('ignore', category=FITSFixedWarning)
+                wcs = WCS(hdus[0].header)
 
             cat_src, xray_src = _get_sources(obsid, dbfile=workdir / 'astromon.h5')
             x, y = wcs.world_to_pixel(xray_src['loc'])
@@ -244,13 +235,15 @@ def astromon():
             }
             return result, 200
         else:
-            return {'obsid': obsid}, 404
+            return {'obsid': obsid, 'error': f'No file for OBSID={obsid}'}, 404
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in Catalog.get: {e}')
-        return {'obsid': 0}, 400
-    # except Exception as e:
-    #    logger.error(f'Exception in Catalog.get: {e}')
-    #    return {'AGASC_ID': 0}, 500
+        msg = f'Bad request in astromon/get: {e}'
+        logger.info(msg)
+        return {'obsid': 0, 'error': msg}, 400
+    except Exception as e:
+        msg = f'Exception in astromon/get: {e}'
+        logger.error(msg)
+        return {'obsid': 0, 'error': msg}, 500
 
 
 class EncoderImpl(json.JSONEncoder):
@@ -303,8 +296,9 @@ def matches():
         }
         return result, 200
     except werkzeug.exceptions.BadRequest as e:
-        logger.info(f'BadRequest in matches.get: {e}')
-        return {'matches': [], 'time_range': []}, 400
+        msg = f'Bad request in astromon/matches/get: {e}'
+        logger.info(msg)
+        return {'matches': [], 'time_range': [], 'error': msg}, 400
 
 
 def _get_regions(loc, obsid, dbfile=None):
