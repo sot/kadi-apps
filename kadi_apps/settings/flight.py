@@ -1,6 +1,6 @@
 import datetime
 
-# PORT is not set in production
+# PORT is not set in flight
 DEBUG = False
 TESTING = False
 
