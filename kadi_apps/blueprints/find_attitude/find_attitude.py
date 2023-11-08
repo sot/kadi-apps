@@ -52,7 +52,7 @@ def get_stars_from_maude(date=None):
     tbl['YAG'] = [out[f"AOACYAN{ii}"] for ii in range(8)]
     tbl['ZAG'] = [out[f"AOACZAN{ii}"] for ii in range(8)]
     tbl['MAG_ACA'] = [out[f"AOACMAG{ii}"] for ii in range(8)]
-    tbl.meta['date_solution'] = CxoTime(date).date
+    tbl.meta['date_solution'] = CxoTime(results[0]['times'][-1]).date
 
     return tbl
 
