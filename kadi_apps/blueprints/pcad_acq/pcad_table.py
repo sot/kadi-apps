@@ -12,7 +12,7 @@ from cxotime import CxoTime
 from cheta import fetch
 from astropy.table import Table, Column
 from Quaternion import Quat
-import Ska.quatutil
+import ska_quatutil
 import mica.starcheck
 import agasc
 
@@ -87,7 +87,7 @@ def deltas_vs_obc_quat(vals, times, catalog):
             ra = star["RA"] + star["PM_RA"] * pm_to_degrees
         if star["PM_DEC"] != -9999:
             dec = star["DEC"] + star["PM_DEC"] * pm_to_degrees
-        star_pos_eci = Ska.quatutil.radec2eci(ra, dec)
+        star_pos_eci = ska_quatutil.radec2eci(ra, dec)
         d_aca = np.dot(
             np.dot(aca_misalign, Ts.transpose(0, 2, 1)), star_pos_eci
         ).transpose()
