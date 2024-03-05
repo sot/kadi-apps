@@ -9,12 +9,14 @@ import kadi.events.query as events
 
 import numpy as np
 from cxotime import CxoTime
-from Ska.engarchive import fetch
+from cheta import fetch
 from astropy.table import Table, Column
 from mica.quaternion import Quat
 import Ska.quatutil
 import mica.starcheck
 import agasc
+
+fetch.data_source.set('cxc', 'maude allow_subset=False')
 
 msids = [
     "AOACASEQ",
