@@ -8,7 +8,7 @@ import kadi.events.query as events
 # auto-generated query references because DJANGO_SETTINGS_MODULE is set.
 
 import numpy as np
-from Chandra.Time import DateTime
+from cxotime import CxoTime
 from Ska.engarchive import fetch
 from astropy.table import Table, Column
 from mica.quaternion import Quat
@@ -69,8 +69,8 @@ def deltas_vs_obc_quat(vals, times, catalog):
     # Compute the multiplicative factor to convert from the AGASC proper motion
     # field to degrees.  The AGASC PM is specified in milliarcsecs / year, so this
     # is dyear * (degrees / milliarcsec)
-    agasc_equinox = DateTime("2000:001:00:00:00.000")
-    dyear = (DateTime(times[0]) - agasc_equinox) / 365.25
+    agasc_equinox = CxoTime("2000:001:00:00:00.000")
+    dyear = (CxoTime(times[0]).secs - agasc_equinox.secs) / 365.25 * 86400
     pm_to_degrees = dyear / (3600.0 * 1000.0)
     R2A = 206264.81
 
@@ -104,7 +104,7 @@ def get_acq_table(obsid):
         return None
     manvr = manvrs[0]
 
-    start_time = DateTime(manvr.acq_start).secs
+    start_time = CxoTime(manvr.acq_start).secs
     stop_time = start_time + (60 * 5)
     acq_data = fetch.MSIDset(msids + slot_msids, start_time, stop_time)
 
