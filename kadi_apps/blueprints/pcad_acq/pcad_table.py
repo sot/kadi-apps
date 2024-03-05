@@ -11,7 +11,7 @@ import numpy as np
 from cxotime import CxoTime
 from cheta import fetch
 from astropy.table import Table, Column
-from mica.quaternion import Quat
+from Quaternion import Quat
 import Ska.quatutil
 import mica.starcheck
 import agasc
@@ -61,7 +61,7 @@ def deltas_vs_obc_quat(vals, times, catalog):
     # Ignore misalign
     aca_misalign = np.array([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
     q_att = Quat(
-        np.array(
+        q=np.array(
             [vals["AOATTQT1"], vals["AOATTQT2"], vals["AOATTQT3"], vals["AOATTQT4"]]
         ).transpose()
     )
