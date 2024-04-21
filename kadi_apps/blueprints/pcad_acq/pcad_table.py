@@ -68,26 +68,15 @@ def deltas_vs_obc_quat(vals, times, catalog):
     Ts = q_att.transform
     acqs = catalog[(catalog["type"] == "BOT") | (catalog["type"] == "ACQ")]
 
-    # Compute the multiplicative factor to convert from the AGASC proper motion
-    # field to degrees.  The AGASC PM is specified in milliarcsecs / year, so this
-    # is dyear * (degrees / milliarcsec)
-    agasc_equinox = CxoTime("2000:001:00:00:00.000")
-    dyear = (CxoTime(times[0]).secs - agasc_equinox.secs) / 365.25 * 86400
-    pm_to_degrees = dyear / (3600.0 * 1000.0)
+    # Radians to arcsecs
     R2A = 206264.81
 
     dy = {}
     dz = {}
     for slot in range(0, 8):
         agasc_id = acqs[acqs["slot"] == slot][0]["id"]
-        star = agasc.get_star(agasc_id)
-        ra = star["RA"]
-        dec = star["DEC"]
-        if star["PM_RA"] != -9999:
-            ra = star["RA"] + star["PM_RA"] * pm_to_degrees
-        if star["PM_DEC"] != -9999:
-            dec = star["DEC"] + star["PM_DEC"] * pm_to_degrees
-        star_pos_eci = ska_quatutil.radec2eci(ra, dec)
+        star = agasc.get_star(agasc_id, date=times[0])
+        star_pos_eci = ska_quatutil.radec2eci(star['RA_PMCORR'], star['DEC_PMCORR'])
         d_aca = np.dot(
             np.dot(aca_misalign, Ts.transpose(0, 2, 1)), star_pos_eci
         ).transpose()
