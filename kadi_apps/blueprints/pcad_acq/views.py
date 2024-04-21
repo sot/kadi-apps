@@ -10,19 +10,13 @@ blueprint = Blueprint('pcad_acq_blueprint', __name__, template_folder='templates
 
 @blueprint.route("/")
 def pcad_acq():
-    obsid = request.args.get('obsid', '')
-    if obsid:
-        try:
-            obsid = int(obsid)
-        except Exception:
-            obsid = ''
-
+    obsid_or_date = request.args.get('obsid_or_date', '')
     pcad_data = ''
-    if obsid:
-        pcad_data = get_acq_table(f'{obsid:05d}')
+    if obsid_or_date != '':
+        pcad_data = get_acq_table(obsid_or_date)
 
     return render_template(
         'pcad_table/acq.html',
         pcad_data=pcad_data,
-        obsid=obsid,
+        obsid_or_date=obsid_or_date,
     )

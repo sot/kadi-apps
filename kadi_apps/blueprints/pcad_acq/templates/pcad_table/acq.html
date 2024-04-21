@@ -26,10 +26,10 @@ class="with-background"
   &nbsp;
   <div class="form-group row">
     <div class="col-sm"> </div>
-    <label class="col-1 col-form-label" for="obsid_in">OBSID</label>
+    <label class="col-1 col-form-label" for="obsid_in">OBSID or Date</label>
     <div class="col-4">
-      <input type="text" class="form-control" id="obsid_in" name="obsid"
-      {% if obsid != '' %} placeholder="{{obsid}}"  value="{{obsid}}" {% endif %}
+      <input type="text" class="form-control" id="obsid_in" name="obsid_or_date"
+      {% if obsid != '' %} placeholder="{{obsid_or_date}}"  value="{{obsid_or_date}}" {% endif %}
       >
     </div>
     <div class="col-sm"> </div>
@@ -49,6 +49,7 @@ style="background-color: lightgray;"
 <td>
 <table class='pcad table' border=1>
 <tr><td>time</td><td>{{ slice.time }}</td></tr>
+<tr><td>date</td><td>{{ slice.date }}</td></tr>
 <tr><td>AOPCADMD</td><td>{{ slice.AOPCADMD }}</td></tr>
 <tr><td>AOACASEQ</td><td>{{ slice.AOACASEQ }}</td></tr>
 <tr><td>AOACHIBK</td><td>{{ slice.AOACHIBK }}</td></tr>
