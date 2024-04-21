@@ -7,6 +7,7 @@ import kadi.events.query as events
 # django 2+. Basically `events/__init__.py` in a django app does not get the
 # auto-generated query references because DJANGO_SETTINGS_MODULE is set.
 
+import os
 import numpy as np
 from cxotime import CxoTime
 from cheta import fetch
@@ -15,6 +16,8 @@ import astropy.units as u
 from Quaternion import Quat
 import ska_quatutil
 import mica.starcheck
+from pathlib import Path
+import ska_dbi
 import agasc
 
 fetch.data_source.set('cxc', 'maude allow_subset=False')
@@ -119,12 +122,27 @@ def get_obsid_for_date(date):
 def get_time_for_obsid_from_cmds(obsid):
     import kadi.commands.states
     states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
-    merge_identical=True, state_keys=['pcad_mode', 'obsid'])
+        merge_identical=True, state_keys=['pcad_mode', 'obsid'])
     ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
-    if not np.any(ok):
-        raise ValueError("No NPNT mode found for obsid {}".format(obsid))
-    start_time = states['tstart'][ok][0]
-    return start_time
+    if np.any(ok):
+        return states['tstart'][ok][0]
+    else:
+        # Try "around" the times in starcheck database
+        starcheck_db_file = (Path(os.environ['SKA'])
+                             / 'data' / 'mica' / 'archive' / 'starcheck' / 'starcheck.db3')
+        with ska_dbi.DBI(dbi='sqlite', server=starcheck_db_file) as db:
+            matches = db.fetchall(f"select * from starcheck_obs where obsid = {obsid}")
+        dates = matches["mp_starcat_time"]
+        for date in dates:
+            states = kadi.commands.states.get_states(
+                start=CxoTime(date) - 3.5 * u.day,
+                stop=CxoTime(date) + 3.5 * u.day,
+                merge_identical=True, state_keys=['pcad_mode', 'obsid'])
+            ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
+            if np.any(ok):
+                return states['tstart'][ok][0]
+        raise ValueError(f"No NPNT mode found for obsid {obsid}")
+
 
 
 def get_time_for_obsid(obsid):
@@ -135,7 +153,7 @@ def get_time_for_obsid(obsid):
         manvr = manvrs[0]
         start_time = CxoTime(manvr.acq_start).secs
         return start_time
-    except:
+    except Exception:
         start_time = get_time_for_obsid_from_cmds(obsid)
         return start_time
     else:
