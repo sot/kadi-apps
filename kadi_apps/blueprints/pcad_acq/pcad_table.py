@@ -84,6 +84,8 @@ def deltas_vs_obc_quat(vals, times, catalog):
     dy = {}
     dz = {}
     for slot in range(0, 8):
+        if len(acqs[acqs["slot"] == slot]) == 0:
+            continue
         agasc_id = acqs[acqs["slot"] == slot][0]["id"]
         star = agasc.get_star(agasc_id, date=times[0])
         star_pos_eci = ska_quatutil.radec2eci(star['RA_PMCORR'], star['DEC_PMCORR'])
@@ -236,6 +238,8 @@ def get_acq_table(obsid_or_date):
     # Estimate the offsets from the expected catalog positions
     dy, dz = deltas_vs_obc_quat(vals, times, catalog)
     for slot in range(0, 8):
+        if slot not in dy or slot not in dz:
+            continue
         vals.add_column(Column(name="dy{}".format(slot), data=dy[slot].data))
         vals.add_column(Column(name="dz{}".format(slot), data=dz[slot].data))
         cat_entry = catalog[catalog["slot"] == slot][0]
@@ -260,6 +264,8 @@ def get_acq_table(obsid_or_date):
         for m in msids:
             slot_data[m] = drow[m]
         for slot in range(0, 8):
+            if slot not in slot_for_pos:
+                continue
             row_dict = {
                 "slot": slot,
                 "catpos": pos_for_slot[slot],
