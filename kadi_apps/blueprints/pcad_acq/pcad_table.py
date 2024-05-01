@@ -14,6 +14,7 @@ from cheta import fetch
 from astropy.table import Table, Column
 import astropy.units as u
 from Quaternion import Quat
+import kadi.commands.states
 import ska_quatutil
 import mica.starcheck
 from pathlib import Path
@@ -120,14 +121,15 @@ def get_obsid_for_date(date):
 
 
 def get_time_for_obsid_from_cmds(obsid):
-    import kadi.commands.states
+
+    # Get recent states, as the obsid basically be in kadi events otherwise
     states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
         merge_identical=True, state_keys=['pcad_mode', 'obsid'])
     ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
     if np.any(ok):
         return states['tstart'][ok][0]
     else:
-        # Try "around" the times in starcheck database
+        # For odd cases, try "around" the times in starcheck database
         starcheck_db_file = (Path(os.environ['SKA'])
                              / 'data' / 'mica' / 'archive' / 'starcheck' / 'starcheck.db3')
         with ska_dbi.DBI(dbi='sqlite', server=starcheck_db_file) as db:
