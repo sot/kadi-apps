@@ -25,6 +25,7 @@ fetch.data_source.set('cxc', 'maude allow_subset=False')
 
 msids = [
     "CVCDUCTR",
+    "COBSRQID",
     "AOACASEQ",
     "AOACQSUC",
     "AOFREACQ",
