@@ -124,7 +124,7 @@ def get_obsid_for_date(date):
 
 def get_time_for_obsid_from_cmds(obsid):
 
-    # Get recent states, as the obsid basically be in kadi events otherwise
+    # Get recent states, as the obsid should basically be in kadi manvr events otherwise
     states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
         merge_identical=True, state_keys=['pcad_mode', 'obsid'])
     ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
