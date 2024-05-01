@@ -64,6 +64,11 @@ slot_msids = [field + "%s" % slot for field in per_slot for slot in range(0, 8)]
 
 
 def deltas_vs_obc_quat(vals, times, catalog):
+    """
+    Calculate the deltas between the expected star positions (based on OBC attitude)
+    and the observed star positions.
+    """
+
     # Ignore misalign
     aca_misalign = np.array([[1.0, 0, 0], [0, 1, 0], [0, 0, 1]])
     q_ok = np.logical_and.reduce([~vals["AOATTQT1"].mask, ~vals["AOATTQT2"].mask,
@@ -103,6 +108,26 @@ def deltas_vs_obc_quat(vals, times, catalog):
 
 
 def get_time(obsid_or_date):
+    """
+    Get the NPNT start time for an obsid (or the NPNT start time for a catalog associated with a date)
+
+    Parameters
+    ----------
+    obsid_or_date : int or str
+        The obsid or the date associated with the catalog.
+
+    Returns
+    -------
+    start_time : str
+        The NPNT start time for the given obsid or date.
+
+    Raises
+    ------
+    ValueError
+        If the obsid is not valid.
+
+    """
+
     start_time = None
     try:
         obsid = int(obsid_or_date)
@@ -118,11 +143,17 @@ def get_time(obsid_or_date):
 
 
 def get_obsid_for_date(date):
+    """
+    Get the obsid for a starcheck catalog associated with a date.
+    """
     starcheck = mica.starcheck.get_starcheck_catalog_at_date(date)
     return starcheck['obs']['obsid']
 
 
 def get_time_for_obsid_from_cmds(obsid):
+    """
+    Get the NPNT start time for an obsid from kadi.
+    """
 
     # Get recent states, as the obsid should basically be in kadi manvr events otherwise
     states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
@@ -150,6 +181,9 @@ def get_time_for_obsid_from_cmds(obsid):
 
 
 def get_time_for_obsid(obsid):
+    """
+    Get the NPNT start time for an obsid from either kadi manvr events or command states.
+    """
     try:
         manvrs = events.manvrs.filter(obsid=obsid)
         if not len(manvrs):
@@ -165,6 +199,9 @@ def get_time_for_obsid(obsid):
 
 
 def get_acq_table(obsid_or_date):
+    """
+    Retrieve the acquisition data for an obsid or date.
+    """
 
     start_time = get_time(obsid_or_date)
 
