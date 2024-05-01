@@ -215,16 +215,21 @@ def get_acq_table(obsid_or_date):
     stop_time = start_time + (60 * 5)
     acq_data = fetch.MSIDset(msids + slot_msids, start_time, stop_time)
 
-    # Find a mod 4 = 0 time to start the data set
+    # Find a mod 4 = 0 time to start the data set at beginning of ACA readout
     four_0 = acq_data['CVCDUCTR'].vals % 4 == 0
     all_four_0 = acq_data['CVCDUCTR'].times[four_0]
     if len(all_four_0) == 0:
         raise ValueError("No mod 4 = 0 times found in the data set")
 
+    # Makes a time grid to key off of the mod 4 times, but calculate the times in
+    # the grid using 4 times the median time between samples so that if there is a
+    # missing mod 4 time, we can still get the other pieces of data.
     t0 = all_four_0[0]
     max_time = acq_data['CVCDUCTR'].times[-1]
     dtime = np.median(acq_data['CVCDUCTR'].times[1:] - acq_data['CVCDUCTR'].times[:-1])
     times = np.arange(t0, max_time + dtime, dtime * 4)[:-1]
+    # I explicitly used times (always increasing) and not the VCDU counters,
+    # so that I would not need to explicitly handle VCDU rollovers.
 
     # Loop over the columns and make masked versions of the data
     acq_data_masked = {}
