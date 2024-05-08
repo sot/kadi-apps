@@ -238,9 +238,20 @@ def get_acq_table(obsid_or_date):
         acq_data_masked[col] = np.ma.masked_all(
             len(times),
             dtype=acq_data[col].vals.dtype)
+
+        # COBSRQID isn't ACA data, so just do a straight searchsorted to line up
+        # reasonable values with the grid of ACA data.
+        if col == 'COBSRQID':
+            for idx, time in enumerate(times):
+                data_idx = np.searchsorted(acq_data[col].times, time)
+                if data_idx < len(acq_data[col].times):
+                    acq_data_masked[col][idx] = acq_data[col].vals[data_idx]
+            continue
+
+        # For the other MSIDs, paste them into a grid of ACA times
         ok = (acq_data[col].times >= times[0]) & (acq_data[col].times <= times[-1])
         for idx, time in enumerate(acq_data[col].times[ok]):
-            # find the index in the grid_times
+            # Find the ACA grid index for the time
             gidx = np.searchsorted(times, time + (dtime * .9)) - 1
             if gidx < len(times):
                 acq_data_masked[col][gidx] = acq_data[col].vals[idx]
@@ -249,6 +260,10 @@ def get_acq_table(obsid_or_date):
     vals['time'] = times
     vals["AOREPEAT"].fill_value = '0'
     vals["AOREPEAT"] = vals["AOREPEAT"].filled()
+
+    # Deal with odd issue that COBSRQID can be missing or masked in anomaly data
+    vals['COBSRQID'].fill_value = -1
+    vals['COBSRQID'] = vals['COBSRQID'].filled()
 
     def compress_data(data, dtime):
         repeat = np.array([int(val) for val in data["AOREPEAT"]])
