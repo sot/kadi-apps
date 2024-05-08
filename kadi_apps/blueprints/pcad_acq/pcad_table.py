@@ -320,6 +320,8 @@ def get_acq_table(obsid_or_date):
             for col in ["dy", "dz", "dmag"]:
                 row_dict[col] = drow["{}{}".format(col, slot)]
             row_dict["POS_ACQID"] = drow["AOACQID{}".format(pos_for_slot[slot])]
+            # Remove trailing spaces in the ACQID
+            row_dict["POS_ACQID"] = row_dict["POS_ACQID"].strip()
             slot_data["slots"].append(row_dict)
         simple_data.append(slot_data)
 
