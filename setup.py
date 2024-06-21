@@ -41,6 +41,7 @@ setup(
         'kadi_apps.blueprints.mica',
         'kadi_apps.blueprints.pcad_acq',
         'kadi_apps.blueprints.star_hist',
+        'kadi_apps.blueprints.agasc_gaia',
     ],
     license=(
         "New BSD/3-clause BSD License\nCopyright (c) 2021"
@@ -59,6 +60,7 @@ setup(
         'kadi_apps.blueprints.mica': ['templates/mica/*.html'],
         'kadi_apps.blueprints.pcad_acq': ['templates/pcad_table/*.html'],
         'kadi_apps.blueprints.star_hist': ['templates/star_hist/*.html'],
+        'kadi_apps.blueprints.agasc_gaia': ['templates/agasc_gaia/*.html'],
     },
     data_files=static_files(),
     cmdclass=cmdclass,
