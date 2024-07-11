@@ -1,4 +1,5 @@
 channels:
+  - https://icxc.cfa.harvard.edu/aspect/ska3-conda/test
   - https://icxc.cfa.harvard.edu/aspect/ska3-conda/flight
   - conda-forge
 dependencies:
