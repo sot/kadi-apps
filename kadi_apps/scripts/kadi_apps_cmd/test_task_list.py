@@ -1,49 +1,51 @@
 
 import pytest
 
-from .task_list import TaskList
+from .task_list import TaskList, task, DependencyError
 
 
 def test_task_docstring():
     tasks = TaskList()
 
-    @tasks.task("a")
+    @task("a", task_list=tasks)
     def a():
         """
         Function A
         """
-        pass
 
     assert a.__doc__.strip() == "Function A"
 
 def test_task_list():
     tasks = TaskList()
 
-    # dependencies do not have to be defined in order
-    @tasks.task("b", dependencies=["a"])
+    # dependencies do not have to be defined in order. This depends on a (not defined yet)
+    @task(task_list=tasks, dependencies=["a"])
     def b():
         result.append("b")
 
-    @tasks.task("a")
+    assert len(tasks) == 1  # a is not defined yet
+
+    @task(task_list=tasks)
     def a():
         result.append("a")
 
-    @tasks.task("c", dependencies=["b"])
+    assert len(tasks) == 2  # a is defined now
+
+    # name is optional
+    @task("c", task_list=tasks, dependencies=["b"])
     def c():
         result.append("c")
 
-    tasks.check()
-
     result = []
-    tasks.run("a")
+    tasks["a"]()
     assert result == ["a"]
 
     result = []
-    tasks.run("b")
+    tasks["b"]()
     assert result == ["a", "b"]
 
     result = []
-    tasks.run("c")
+    tasks["c"]()
     assert result == ["a", "b", "c"]
 
     # running the function is the same as running in the task list
@@ -53,93 +55,120 @@ def test_task_list():
 
     # it is possible to run a task without running its dependencies
     result = []
-    tasks.run("c", follow_dependencies=False)
+    c.function()
+    assert result == ["c"]
+
+    result = []
+    tasks["c"].function()
+    assert result == ["c"]
+
+    result = []
+    tasks["c"](follow_dependencies=False)
     assert result == ["c"]
 
     # tasks can be added after the fact
-    @tasks.task("d", dependencies=["b"])
+    @task("d", task_list=tasks, dependencies=["b"])
     def d():
         result.append("d")
 
     result = []
-    tasks.run("d")
+    tasks["d"]()
     assert result == ["a", "b", "d"]
 
 
 def test_task_dependency_duplicates():
+    # check that tasks are run only once
     tasks = TaskList()
 
-    @tasks.task("a")
+    @task("a", task_list=tasks)
     def a():
         result.append("a")
 
-    @tasks.task("b", dependencies=["a"])
+    @task("b", task_list=tasks, dependencies=["a"])
     def b():
         result.append("b")
 
-    @tasks.task("c", dependencies=["a", "b"])
+    @task("c", task_list=tasks, dependencies=["a", "b"])
     def c():
         result.append("c")
 
-    @tasks.task("d", dependencies=["a", "c"])
+    @task("d", task_list=tasks, dependencies=["a", "c"])
     def d():
         result.append("d")
 
     # this should not be run in this test
-    @tasks.task("e", dependencies=["a", "c"])
+    @task("e", task_list=tasks, dependencies=["a", "c"])
     def d():
         result.append("e")
 
-    tasks.check()
-
     result = []
-    tasks.run("d")
+    tasks["d"]()
     assert result == ["a", "b", "c", "d"]  # a is run once
 
 
 def test_task_error():
     tasks = TaskList()
 
-    @tasks.task("a")
+    @task("a", task_list=tasks)
     def a():
         result.append("a")
 
-    @tasks.task("b", dependencies=["a"])
+    @task("b", task_list=tasks, dependencies=["a"])
     def b():
-        idonotexist.append("b")
+        idonotexist.append("b")  # this will cause an error
         pass
 
-    @tasks.task("c", dependencies=["b"])
+    @task("c", task_list=tasks, dependencies=["b"])
     def c():
         result.append("c")
         pass
 
-    tasks.check()
-
     result = []
-    tasks.run("c")
+    tasks["c"]()
     assert result == ["a"]  # it bailed in b
 
     with pytest.raises(NameError):
         # name 'idonotexist' is not defined
-        tasks.run("c", break_on_error=False)
+        result = []
+        tasks["c"](break_on_error=False)
+        assert result == ["a"]  # it bailed in b
 
 
 def test_task_circular_dependencies():
     tasks = TaskList()
 
-    @tasks.task("a", dependencies=["c"])
+    @task("a", task_list=tasks, dependencies=["c"])
     def a():
         result.append("a")
 
-    @tasks.task("b", dependencies=["a"])
+    @task("b", task_list=tasks, dependencies=["a"])
     def b():
         result.append("b")
 
-    @tasks.task("c", dependencies=["b"])
-    def c():
-        result.append("c")
+    with pytest.raises(DependencyError):
+        # circular dependencies are caught upon creation
+        @task("c", task_list=tasks, dependencies=["b"])
+        def c():
+            result.append("c")
 
-    with pytest.raises(RuntimeError):
-        tasks.check()
 
+def test_broken_dependencies():
+    tasks = TaskList()
+
+    @task(task_list=tasks)
+    def a():
+        result.append("a")
+
+    @task(task_list=tasks, dependencies=["a", "c"])  # c is not defined
+    def b():
+        result.append("b")
+
+    @task(task_list=tasks, dependencies=["b"])  # c is an indirect dependency and is not defined
+    def d():
+        result.append("d")
+
+    with pytest.raises(DependencyError):
+        tasks.get_task_dependencies("b")
+
+    with pytest.raises(DependencyError):
+        tasks.get_task_dependencies("d")

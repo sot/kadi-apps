@@ -1,5 +1,14 @@
 """
 Run kadi-apps.
+
+This script is a wrapper around the flask server for kadi-apps. Arguments are optional.
+The default action is to start the server and open in the browser (show)
+
+The script can start, stop, and show the status of the server.
+The server process is managed using supervisord, and the script can be used to start/stop
+supervisord, which in turn kills the server.
+
+The script can also create and update the conda environment used to run the server.
 """
 
 import os
@@ -16,12 +25,11 @@ from pathlib import Path
 from configparser import ConfigParser
 
 
-from .task_list import TaskList
+from .task_list import task, TASK_LIST
 
 
 CONFIG_FILE = str(Path(__file__).parent / "supervisord.conf")
 KADI_APPS_ENV = "ska3-env-for-kadi-apps"
-TASK_LIST = TaskList()
 
 
 def get_supervisor_config():
@@ -74,7 +82,7 @@ def _child_env_():
     return env
 
 
-@TASK_LIST.task("start-supervisor", dependencies=["create-env"])
+@task(dependencies=["create-env"])
 def start_supervisor():
     """Start supervisord process."""
     config = get_supervisor_config()
@@ -85,15 +93,15 @@ def start_supervisor():
         subprocess.run(["supervisord", "-c", CONFIG_FILE], env=_child_env_())
 
 
-@TASK_LIST.task("kill")
+@task
 def kill_supervisor():
     """Kill supervisord process (and any child process with it)."""
     if pid := get_supervisor_pid():
         subprocess.run(["kill", str(pid)])
 
 
-@TASK_LIST.task("start", dependencies=["start-supervisor"])
-def start_server():
+@task(dependencies=["start-supervisor"])
+def start():
     """Start kadi-apps flask server."""
     subprocess.run(
         ["supervisorctl", "-c", CONFIG_FILE, "start", "kadi-apps"],
@@ -101,8 +109,8 @@ def start_server():
     )
 
 
-@TASK_LIST.task("stop", dependencies=["start-supervisor"])
-def stop_server():
+@task(dependencies=["start-supervisor"])
+def stop():
     """Stop kadi-apps flask server."""
     subprocess.run(
         ["supervisorctl", "-c", CONFIG_FILE, "stop", "kadi-apps"],
@@ -110,8 +118,8 @@ def stop_server():
     )
 
 
-@TASK_LIST.task("status", dependencies=["create-env"])
-def status_server():
+@task(dependencies=["create-env"])
+def status():
     """Display status of supervisord and kadi-apps server."""
     pid = get_supervisor_pid()
     if pid:
@@ -128,7 +136,7 @@ def status_server():
         print("supervisord                      STOPPED")
 
 
-@TASK_LIST.task("show", dependencies=["start"])
+@task(dependencies=["start"])
 def show():
     """Start the kadi-apps server and open the browser."""
     for _ in range(20):
@@ -144,14 +152,14 @@ def show():
     webbrowser.open(url, new=2)
 
 
-@TASK_LIST.task("create-env")
+@task
 def create_env():
     """Create the conda environment for kadi-apps."""
     if not (Path(os.environ["CONDA_PREFIX"]).parent / KADI_APPS_ENV).exists():
         update_env()
 
 
-@TASK_LIST.task("update-env")
+@task
 def update_env():
     """Update the conda environment for kadi-apps."""
     env_file = Path(__file__).parent / "environment.yml"
@@ -165,8 +173,8 @@ def get_parser():
     epilog = """
     
     Available actions:\n"""
-    for action in TASK_LIST.tasks():
-        epilog += f"        {action:12s} {TASK_LIST.function(action).__doc__}\n"
+    for action in TASK_LIST:
+        epilog += f"        {action:16s} {TASK_LIST[action].__doc__}\n"
     epilog = textwrap.dedent(epilog)
 
     parser = argparse.ArgumentParser(
@@ -174,17 +182,14 @@ def get_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=epilog
     )
-    parser.add_argument("action", choices=TASK_LIST.tasks(), nargs='?', default="show")
+    parser.add_argument("action", choices=list(TASK_LIST), nargs='?', default="show")
     return parser
 
 
 def main():
     args = get_parser().parse_args()
-    if args.action in TASK_LIST.tasks():
-        TASK_LIST.run(args.action)
-
-
-TASK_LIST.check()
+    if args.action in TASK_LIST:
+        TASK_LIST[args.action]()
 
 
 if __name__ == "__main__":
