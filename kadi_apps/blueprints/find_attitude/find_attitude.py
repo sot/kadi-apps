@@ -16,6 +16,7 @@ from Quaternion import normalize
 from kadi_apps.rendering import render_template
 
 POSSIBLE_CONSTRAINTS = ["pitch", "pitch_err",
+                        "att", "att_err",
                         "off_nom_roll_max",
                         "min_stars",
                         "mag_err"]
@@ -99,7 +100,10 @@ def get_constraints_from_form(form):
             if form_val == "":
                 form_val = None
             else:
-                form_val = float(form_val)
+                if constraint == 'att':
+                    form_val = normalize([float(val) for val in form_val.split(",")])
+                else:
+                    form_val = float(form_val)
         if form_val is not None:
             constraints[constraint] = form_val
 

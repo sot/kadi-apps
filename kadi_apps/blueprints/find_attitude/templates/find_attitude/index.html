@@ -81,6 +81,18 @@ class="with-background"
   </div>
   <div class="row">
     <div class="col">
+      <label for="att">Estimated Attitude (supply as q1, q2, q3, q4)</label>
+      <input type="text" class="form-control" id="att" name="att" value="{{att}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="att_err">Attitude Error (default 4.0)</label>
+      <input type="text" class="form-control" id="att_err" name="att_err" value="{{att_err}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
       <label for="min_stars">Min # of stars required (default via get_min_stars())</label>
       <input type="text" class="form-control" id="min_stars" name="min_stars" value="{{min_stars}}">
     </div>
