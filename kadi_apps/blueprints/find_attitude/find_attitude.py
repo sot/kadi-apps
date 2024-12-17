@@ -2,14 +2,16 @@
 import os
 from io import StringIO
 from logging import CRITICAL
+from flask import Blueprint, request
 
-import find_attitude
-import ska_sun
+
 from cxotime import CxoTime
+import find_attitude
 from find_attitude.find_attitude import (find_attitude_solutions,
                                          get_stars_from_text, logger)
-from flask import Blueprint, request
 from kadi import __version__
+import ska_sun
+from Quaternion import normalize
 
 from kadi_apps.rendering import render_template
 
