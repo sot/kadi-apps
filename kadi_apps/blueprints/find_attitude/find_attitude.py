@@ -1,17 +1,17 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-from io import StringIO
 import os
-
-from flask import Blueprint, request
-
-from cxotime import CxoTime
-import ska_sun
-from kadi import __version__
-import find_attitude
-from find_attitude.find_attitude import get_stars_from_text, find_attitude_solutions, logger
+from io import StringIO
 from logging import CRITICAL
-from kadi_apps.rendering import render_template
 
+import find_attitude
+import ska_sun
+from cxotime import CxoTime
+from find_attitude.find_attitude import (find_attitude_solutions,
+                                         get_stars_from_text, logger)
+from flask import Blueprint, request
+from kadi import __version__
+
+from kadi_apps.rendering import render_template
 
 POSSIBLE_CONSTRAINTS = ['pitch', 'pitch_err',
                         'off_nom_roll_max',
@@ -32,11 +32,11 @@ blueprint = Blueprint(
 
 
 def get_stars_from_maude(date=None):
-    from maude import get_msids
     import astropy.units as u
-    from cxotime import CxoTime
-    from astropy.table import Table
     import numpy as np
+    from astropy.table import Table
+    from cxotime import CxoTime
+    from maude import get_msids
 
     msids = []
     msids.extend([f"aoacyan{ii}" for ii in range(8)])
