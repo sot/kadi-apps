@@ -13,10 +13,10 @@ from kadi import __version__
 
 from kadi_apps.rendering import render_template
 
-POSSIBLE_CONSTRAINTS = ['pitch', 'pitch_err',
-                        'off_nom_roll_max',
-                        'min_stars',
-                        'mag_err']
+POSSIBLE_CONSTRAINTS = ["pitch", "pitch_err",
+                        "off_nom_roll_max",
+                        "min_stars",
+                        "mag_err"]
 
 # Only emit critical messages
 logger.level = CRITICAL
@@ -94,7 +94,7 @@ def get_constraints_from_form(form):
         form_val = form.get(constraint)
         if form_val is not None:
             form_val = form_val.strip()
-            if form_val == '':
+            if form_val == "":
                 form_val = None
             else:
                 form_val = float(form_val)
@@ -161,7 +161,7 @@ def find_solutions_and_get_context():
         fa_constraints = None
 
     # Save the inputs for debugging
-    context['inputs'] = f"{stars} \n tolerance={tolerance} \n constraints={constraints} \n version={find_attitude.__version__}"
+    context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints} \n version={find_attitude.__version__}"
 
     try:
         solutions = find_attitude_solutions(stars, tolerance=tolerance, constraints=fa_constraints)
@@ -177,7 +177,7 @@ def find_solutions_and_get_context():
         return context
 
     # Reference date
-    date = context.get('date_solution', None)
+    date = context.get("date_solution", None)
     date = CxoTime(date) if date else CxoTime.now()
 
     context['solutions'] = []
@@ -189,8 +189,8 @@ def find_solutions_and_get_context():
         summary_lines = tbl.pformat(max_width=-1, max_lines=-1)
         sol = {'att_fit': solution['att_fit'],
                'summary': os.linesep.join(summary_lines)}
-        sol['date'] = date
-        sol['pitch'], sol['roll'] = get_sol_pitch_roll(solution['att_fit'], date)
+        sol["date"] = date
+        sol["pitch"], sol["roll"] = get_sol_pitch_roll(solution['att_fit'], date)
         context['solutions'].append(sol)
 
     return context
