@@ -4,10 +4,19 @@ import os
 
 from flask import Blueprint, request
 
+from cxotime import CxoTime
+import ska_sun
 from kadi import __version__
+import find_attitude
 from find_attitude.find_attitude import get_stars_from_text, find_attitude_solutions, logger
 from logging import CRITICAL
 from kadi_apps.rendering import render_template
+
+
+POSSIBLE_CONSTRAINTS = ['pitch', 'pitch_err',
+                        'off_nom_roll_max',
+                        'min_stars',
+                        'mag_err']
 
 # Only emit critical messages
 logger.level = CRITICAL
@@ -78,6 +87,29 @@ def index():
     )
 
 
+def get_constraints_from_form(form):
+
+    constraints = {}
+    for constraint in POSSIBLE_CONSTRAINTS:
+        form_val = form.get(constraint)
+        if form_val is not None:
+            form_val = form_val.strip()
+            if form_val == '':
+                form_val = None
+            else:
+                form_val = float(form_val)
+        if form_val is not None:
+            constraints[constraint] = form_val
+
+    return constraints
+
+
+def get_sol_pitch_roll(att_fit, date):
+    sun_pitch = ska_sun.pitch(ra=att_fit.ra, dec=att_fit.dec, time=date)
+    off_nom_roll = ska_sun.off_nominal_roll(att=att_fit, time=date)
+    return sun_pitch, off_nom_roll
+
+
 def find_solutions_and_get_context():
     stars_text = request.form.get('stars_text', '')
     context = {}
@@ -111,8 +143,28 @@ def find_solutions_and_get_context():
 
     # Try to find solutions
     tolerance = float(request.form.get('distance_tolerance', '2.5'))
+
+    # Keep any constraints in the form for next submission
+    for constraint in POSSIBLE_CONSTRAINTS:
+        form_val = request.form.get(constraint)
+        if form_val is not None:
+            context[constraint] = form_val
+
+    # And get the constraints for Constraints class
+    constraints = get_constraints_from_form(request.form)
+
+    # If there are supplied constraints, create a Constraints object - but don't create
+    # this at all if there are no constraints.
+    if constraints:
+        fa_constraints = find_attitude.Constraints(**constraints)
+    else:
+        fa_constraints = None
+
+    # Save the inputs for debugging
+    context['inputs'] = f"{stars} \n tolerance={tolerance} \n constraints={constraints} \n version={find_attitude.__version__}"
+
     try:
-        solutions = find_attitude_solutions(stars, tolerance=tolerance)
+        solutions = find_attitude_solutions(stars, tolerance=tolerance, constraints=fa_constraints)
     except Exception:
         import traceback
         context['error_message'] = traceback.format_exc()
@@ -124,6 +176,10 @@ def find_solutions_and_get_context():
                                     'Try increasing distance tolerance.')
         return context
 
+    # Reference date
+    date = context.get('date_solution', None)
+    date = CxoTime(date) if date else CxoTime.now()
+
     context['solutions'] = []
     for solution in solutions:
         tbl = solution['summary']
@@ -133,6 +189,8 @@ def find_solutions_and_get_context():
         summary_lines = tbl.pformat(max_width=-1, max_lines=-1)
         sol = {'att_fit': solution['att_fit'],
                'summary': os.linesep.join(summary_lines)}
+        sol['date'] = date
+        sol['pitch'], sol['roll'] = get_sol_pitch_roll(solution['att_fit'], date)
         context['solutions'].append(sol)
 
     return context

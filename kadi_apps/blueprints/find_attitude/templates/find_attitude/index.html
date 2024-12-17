@@ -62,6 +62,36 @@ class="with-background"
     </div>
   </div>
   &nbsp;
+  <P><B>Optional Constraints:</B></P>
+  <div class="row">
+    <div class="col">
+      <label for="pitch">Sun Pitch</label>
+      <input type="text" class="form-control" id="pitch" name="pitch" value="{{pitch}}">
+    </div>
+    <div class="col">
+      <label for="pitch_err">Pitch Error (degrees) (default 1.5)</label>
+      <input type="text" class="form-control" id="pitch_err" name="pitch_err" value="{{pitch_err}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="off_nom_roll_max">Max Off-Nominal Roll (degrees) (default 2.0 if constrained)</label>
+      <input type="text" class="form-control" id="off_nom_roll_max" name="off_nom_roll_max" value="{{off_nom_roll_max}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="min_stars">Min # of stars required (default via get_min_stars())</label>
+      <input type="text" class="form-control" id="min_stars" name="min_stars" value="{{min_stars}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="mag_err">Faint mag threshold for filtering pairs (default 1.5)</label>
+      <input type="text" class="form-control" id="mag_err" name="mag_err" value="{{mag_err}}">
+    </div>
+  </div>
+  &nbsp;
   <div class="row">
     <div class="col">
       <input type="submit" value="Submit">
@@ -74,6 +104,9 @@ class="with-background"
   <pre>
     {{ error_message }}
   </pre>
+  <pre>
+    {{ inputs }}
+  </pre>
 {% endif %}
 
 {% if solutions %}
@@ -81,6 +114,10 @@ class="with-background"
   <h2> Attitude solution </h2>
 
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
+
+  <P>Date for Pitch/Roll: {{ solution.date }}<br>
+  Sun Pitch: {{ solution.pitch }}<br>
+  Off-Nominal Roll: {{ solution.roll }}</P>
 
   <h4> Coordinates </h4>
 
