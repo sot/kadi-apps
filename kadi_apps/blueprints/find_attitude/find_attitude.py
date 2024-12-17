@@ -167,7 +167,8 @@ def find_solutions_and_get_context():
         fa_constraints = None
 
     # Save the inputs for debugging
-    context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints} \n version={find_attitude.__version__}"
+    context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints}"
+    context["find_attitude_version"] = find_attitude.__version__
 
     try:
         solutions = find_attitude_solutions(stars, tolerance=tolerance, constraints=fa_constraints)
