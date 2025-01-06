@@ -2,16 +2,19 @@
 import os
 from io import StringIO
 from logging import CRITICAL
-from flask import Blueprint, request
 
-
-from cxotime import CxoTime
+import astropy.units as u
 import find_attitude
+import numpy as np
+import ska_sun
+from astropy.table import Table
+from cxotime import CxoTime
 from find_attitude.find_attitude import (find_attitude_solutions,
                                          get_stars_from_text, logger)
+from flask import Blueprint, request
 from kadi import __version__
-import ska_sun
-from Quaternion import normalize
+from maude import get_msids
+from Quaternion import Quat, normalize
 
 from kadi_apps.rendering import render_template
 
@@ -34,14 +37,10 @@ blueprint = Blueprint(
 )
 
 
-def get_stars_from_maude(date=None):
-    import astropy.units as u
-    import numpy as np
-    from astropy.table import Table
-    from cxotime import CxoTime
-    from maude import get_msids
+def get_telem_from_maude(date=None):
 
-    msids = []
+
+    msids = ["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"]
     msids.extend([f"aoacyan{ii}" for ii in range(8)])
     msids.extend([f"aoaczan{ii}" for ii in range(8)])
     msids.extend([f"aoacmag{ii}" for ii in range(8)])
@@ -58,26 +57,38 @@ def get_stars_from_maude(date=None):
         msid = result["msid"]
         value = result["values"][-1]
         out[msid] = value
-    tbl = Table()
 
+    tbl = Table()
     tbl['slot'] = np.arange(8)
     tbl['YAG'] = [out[f"AOACYAN{ii}"] for ii in range(8)]
     tbl['ZAG'] = [out[f"AOACZAN{ii}"] for ii in range(8)]
     tbl['MAG_ACA'] = [out[f"AOACMAG{ii}"] for ii in range(8)]
     tbl.meta['date_solution'] = CxoTime(results[0]['times'][-1]).date
 
-    return tbl
+    quat = Quat(q=[out[f"AOATTQT{ii}"] for ii in [1, 2, 3, 4]])
+
+    return CxoTime(results[0]['times'][-1]).date, tbl, quat
+
+
 
 
 @blueprint.route("/", methods=['GET', 'POST'])
 def index():
+    context = {}
     if request.method == 'POST':
-        context = find_solutions_and_get_context()
+        action = request.form.get('action')
+        context = find_solutions_and_get_context(action)
     else:
         context = {}
 
     context['kadi_version'] = __version__
     context['distance_tolerance'] = float(request.form.get('distance_tolerance', '2.5'))
+
+    # Update some constraints to their default values.
+    context["pitch_err"] = float(request.form.get("pitch_err", 1.5))
+    context["off_nom_roll_max"] = float(request.form.get("off_nom_roll_max", 2.0))
+    context["att_err"] = float(request.form.get("att_err", 4.0))
+    context["mag_err"] = float(request.form.get("mag_err", 1.5))
 
     if context.get('solutions'):
         context['subtitle'] = ': Solution'
@@ -116,13 +127,13 @@ def get_sol_pitch_roll(att_fit, date):
     return sun_pitch, off_nom_roll
 
 
-def find_solutions_and_get_context():
+def find_solutions_and_get_context(action):
     stars_text = request.form.get('stars_text', '')
     context = {}
-    if stars_text.strip() == '':
+    if stars_text.strip() == '' or action == 'gettelem':
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
-        stars = get_stars_from_maude(date_solution)
+        date, stars, quat = get_telem_from_maude(date_solution)
 
         # Get a formatted version of the stars table that is used for finding
         # the solutions. This gets put back into the web page output.
@@ -135,6 +146,12 @@ def find_solutions_and_get_context():
         stars_context.write(out, format='ascii.fixed_width', delimiter=' ')
         context['stars_text'] = out.getvalue()
         context['date_solution'] = stars.meta['date_solution']
+        context['att'] = f"{quat.q[0]:.8f}, {quat.q[1]:.8f}, {quat.q[2]:.8f}, {quat.q[3]:.8f}"
+
+        # calculate the pitch
+        sun_pitch = ska_sun.pitch(ra=quat.ra, dec=quat.dec, time=date)
+        context['pitch'] = f"{sun_pitch:.2f}"
+
     else:
         context['stars_text'] = stars_text
 
@@ -147,6 +164,10 @@ def find_solutions_and_get_context():
                                         .format(err))
             return context
 
+    if action == 'gettelem':
+        # don't continue to get the solution, just return with the updated context
+        return context
+
     # Try to find solutions
     tolerance = float(request.form.get('distance_tolerance', '2.5'))
 
@@ -156,18 +177,15 @@ def find_solutions_and_get_context():
         if form_val is not None:
             context[constraint] = form_val
 
-    # And get the constraints for Constraints class
-    constraints = get_constraints_from_form(request.form)
-
-    # If there are supplied constraints, create a Constraints object - but don't create
-    # this at all if there are no constraints.
-    if constraints:
+    if action == 'calc_solution_constraints':
+        # And get the constraints for Constraints class
+        constraints = get_constraints_from_form(request.form)
         fa_constraints = find_attitude.Constraints(**constraints)
+        context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints}"
     else:
         fa_constraints = None
+        context["inputs"] = f"{stars} \n tolerance={tolerance}"
 
-    # Save the inputs for debugging
-    context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints}"
     context["find_attitude_version"] = find_attitude.__version__
 
     try:
