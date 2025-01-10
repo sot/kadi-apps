@@ -34,13 +34,13 @@ class="with-background"
 </div>
 
 
-
+<div id="form">
 <form action="/find_attitude/" method="post">
 
+  <div style="width: 50%; float: left;">
   <button type="submit" name="action" value="gettelem">Get Telem</button>
-
-
   <div class="row">
+    <div class="col">
     <div class="col">
       <label for="distance_tolerance">Distance tolerance (arcsec) </label>
       <input type="text" class="form-control" id="distance_tolerance" name="distance_tolerance" value="{{distance_tolerance}}">
@@ -65,13 +65,16 @@ class="with-background"
                monospace;"
         rows="10" cols="80" name="stars_text">{{stars_text}}</textarea>
     </div>
+    </div>
   </div>
 
   <button type="submit" name="action" value="calc_solution">Find Attitude (no constraints)</button>
 
   <br></br>
   <br></br>
+  </div>
 
+  <div style="width: 50%; float: right;">
   <P><B>Optional Constraints:</B></P>
   <div class="row">
     <div class="col">
@@ -114,8 +117,11 @@ class="with-background"
     </div>
   </div>
   <button type="submit" name="action" value="calc_solution_constraints">Find Attitude with Constraints</button>
+  </div>
 
 </form>
+<br style="clear:both;"/>
+</div>
 
 <br></br>
 <br></br>
