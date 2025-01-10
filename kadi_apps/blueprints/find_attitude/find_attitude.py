@@ -215,7 +215,7 @@ def find_solutions_and_get_context(action):
     # No solutions, bummer.
     if not solutions:
         context['error_message'] = ('No matching solutions found.\n'
-                                    'Try increasing distance tolerance.')
+                                    'Try increasing distance tolerance or relaxing optional constraints (if applied).')
         return context
 
     # Reference date
