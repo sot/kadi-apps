@@ -117,6 +117,9 @@ def get_constraints_from_form(form):
         if form_val is not None:
             constraints[constraint] = form_val
 
+    date = form.get('date_solution', '').strip() or None
+    constraints['date'] = date
+
     return constraints
 
 
