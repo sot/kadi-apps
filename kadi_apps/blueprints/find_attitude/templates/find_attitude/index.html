@@ -167,10 +167,23 @@ class="with-background"
       </p>
     </div>
   </div>
-  <pre>
   <h4> Star match summary and residuals </h4>
+  <pre>
 {{ solution.summary }}
   </pre>
+  <h4>Distance from solution to onboard estimated attitude</h4>
+  <p>
+    dyaw {{solution.dyaw}} <br>
+    dpitch {{solution.dpitch}} <br>
+  </p>
+  <strong>Onboard estimated attitude</strong>
+  <p>
+    RA={{solution.att_est.ra}} <br>
+    Dec={{solution.att_est.dec}} <br>
+    Roll={{solution.att_est.roll}} <br>
+  </p>
+  <p></p>
+
   {% endfor %}
 
 <P><B>Supplied find_attitude Inputs</B></P>
