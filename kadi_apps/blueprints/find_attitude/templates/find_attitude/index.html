@@ -75,21 +75,15 @@ class="with-background"
   </div>
 
   <div style="width: 50%; float: right;">
-  <P><B>Optional Constraints:</B></P>
+  <P><B>Optional Constraints to Limit Star Pair Candidates:</B></P>
   <div class="row">
     <div class="col">
       <label for="pitch">Sun Pitch</label>
       <input type="text" class="form-control" id="pitch" name="pitch" value="{{pitch}}">
     </div>
     <div class="col">
-      <label for="pitch_err">Pitch Error (degrees))</label>
+      <label for="pitch_err">Pitch Uncertainty (degrees)</label>
       <input type="text" class="form-control" id="pitch_err" name="pitch_err" value="{{pitch_err}}">
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <label for="off_nom_roll_max">Max Off-Nominal Roll (degrees)</label>
-      <input type="text" class="form-control" id="off_nom_roll_max" name="off_nom_roll_max" value="{{off_nom_roll_max}}">
     </div>
   </div>
   <div class="row">
@@ -100,19 +94,25 @@ class="with-background"
   </div>
   <div class="row">
     <div class="col">
-      <label for="att_err">Attitude Error</label>
+      <label for="att_err">Radial Uncertainty in Estimated Attitude (degrees)</label>
       <input type="text" class="form-control" id="att_err" name="att_err" value="{{att_err}}">
     </div>
   </div>
   <div class="row">
     <div class="col">
-      <label for="min_stars">Min # of stars required (default via get_min_stars())</label>
+      <label for="off_nom_roll_max">Max Off-Nominal Roll (degrees)</label>
+      <input type="text" class="form-control" id="off_nom_roll_max" name="off_nom_roll_max" value="{{off_nom_roll_max}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="min_stars">Min Required Stars (leave blank or discuss with ACA)</label>
       <input type="text" class="form-control" id="min_stars" name="min_stars" value="{{min_stars}}">
     </div>
   </div>
   <div class="row">
     <div class="col">
-      <label for="mag_err">Faint mag threshold for filtering pairs</label>
+      <label for="mag_err">Max Diff Between Observed - AGASC Star Mag</label>
       <input type="text" class="form-control" id="mag_err" name="mag_err" value="{{mag_err}}">
     </div>
   </div>
