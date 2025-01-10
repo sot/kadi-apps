@@ -86,7 +86,6 @@ def index():
 
     # Update some constraints to their default values.
     context["pitch_err"] = float(request.form.get("pitch_err", 1.5))
-    context["off_nom_roll_max"] = float(request.form.get("off_nom_roll_max", 2.0))
     context["att_err"] = float(request.form.get("att_err", 4.0))
     context["mag_err"] = float(request.form.get("mag_err", 1.5))
 
@@ -130,10 +129,11 @@ def get_sol_pitch_roll(att_fit, date):
 def find_solutions_and_get_context(action):
     stars_text = request.form.get('stars_text', '')
     context = {}
+    att_est = None
     if stars_text.strip() == '' or action == 'gettelem':
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
-        date, stars, quat = get_telem_from_maude(date_solution)
+        date, stars, att_est = get_telem_from_maude(date_solution)
 
         # Get a formatted version of the stars table that is used for finding
         # the solutions. This gets put back into the web page output.
@@ -145,24 +145,38 @@ def find_solutions_and_get_context(action):
             stars_context[name].format = '.2f'
         stars_context.write(out, format='ascii.fixed_width', delimiter=' ')
         context['stars_text'] = out.getvalue()
-        context['date_solution'] = stars.meta['date_solution']
-        context['att'] = f"{quat.q[0]:.8f}, {quat.q[1]:.8f}, {quat.q[2]:.8f}, {quat.q[3]:.8f}"
+        context['date_solution'] = date
+        context['att'] = f"{att_est.q[0]:.8f}, {att_est.q[1]:.8f}, {att_est.q[2]:.8f}, {att_est.q[3]:.8f}"
 
         # calculate the pitch
-        sun_pitch = ska_sun.pitch(ra=quat.ra, dec=quat.dec, time=date)
+        sun_pitch = ska_sun.pitch(ra=att_est.ra, dec=att_est.dec, time=date)
         context['pitch'] = f"{sun_pitch:.2f}"
+
+        # And the off nominal roll
+        est_off_nominal_roll = ska_sun.off_nominal_roll(att=att_est, time=date)
+        # And just add 2 to whatever it is to seed the constraint for now
+        context['off_nom_roll_max'] = f"{int(np.abs(est_off_nominal_roll)) + 2}"
 
     else:
         context['stars_text'] = stars_text
+        date_solution = request.form.get('date_solution', '').strip() or None
 
         # First parse the star text input
         try:
             stars = get_stars_from_text(stars_text)
+            context['date_solution'] = date_solution
         except Exception as err:
             context['error_message'] = ("{}\n"
                                         "Does it look like one of the examples?"
                                         .format(err))
             return context
+
+        att_est_text = request.form.get("att", "").strip() or None
+        if att_est_text:
+            try:
+                att_est = Quat(q=[float(val) for val in att_est_text.split(",")])
+            except Exception:
+                pass
 
     if action == 'gettelem':
         # don't continue to get the solution, just return with the updated context
@@ -215,7 +229,15 @@ def find_solutions_and_get_context(action):
         sol = {'att_fit': solution['att_fit'],
                'summary': os.linesep.join(summary_lines)}
         sol["date"] = date
-        sol["pitch"], sol["roll"] = get_sol_pitch_roll(solution['att_fit'], date)
+        pitch, off_nominal_roll = get_sol_pitch_roll(solution['att_fit'], date)
+        sol['pitch'] = f"{pitch:.3f}"
+        sol['roll'] = f"{off_nominal_roll:.3f}"
+        if att_est is not None:
+            sol["att_est"] = att_est
+            att_est_dq = att_est.dq(solution['att_fit'])
+            sol["dyaw"] = att_est_dq.yaw
+            sol["dpitch"] = att_est_dq.pitch
+
         context['solutions'].append(sol)
 
     return context
