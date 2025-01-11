@@ -111,7 +111,10 @@ def test_private(test_server):
     assert r.status_code == 401
     data = json.loads(r.text)
 
+    # the following test checks (or used to) that an unsigned token was not accepted at face value
+    # (i.e.: the checking algorithm did not check using the algorithm claimed by the token itself)
     claims = jwt.decode(token, options={"verify_signature": False}, algorithms="none")
-    unsigned_token = jwt.encode(claims, None, algorithm=None)
+    unsigned_token = jwt.encode(claims, "", algorithm=None)
     headers = {"Authorization": f"Bearer {unsigned_token}"}
+    r = requests.get(f'{test_server["url"]}/test', headers=headers)
     assert not r.ok
