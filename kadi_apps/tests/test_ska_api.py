@@ -19,7 +19,7 @@ def test_agasc_star(test_server):
     response = requests.get(f"{api_url}/{path}?id={agasc_id}&{date=}")
     star_api = Table(response.json())[0]
     # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
-    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG_ACA']
     assert list(star[cols].values()) == list(star_api[cols].values())
 
 
@@ -49,7 +49,7 @@ def test_agasc_stars(test_server):
     assert response.ok, 'test_agasc_stars API request failed'
     stars_api = Table(response.json())
     # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
-    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG_ACA']
     assert np.all(stars_api.as_array().astype(stars.dtype)[cols] == stars.as_array()[cols])
 
 
@@ -66,7 +66,7 @@ def test_agasc_cone(test_server):
     assert response.ok, 'test_agasc_cone API request failed'
     assert len(stars) == len(stars_api)
     # for some reason, RA_PMCORR and DEC_PMCORR differ, so I take only a few columns anyway:
-    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG']
+    cols = ['AGASC_ID', 'RA', 'DEC', 'MAG_ACA']
     assert np.all(stars_api.as_array().astype(stars.dtype)[cols] == stars.as_array()[cols])
 
 
