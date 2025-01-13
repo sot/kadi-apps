@@ -171,6 +171,7 @@ class="with-background"
   <pre>
 {{ solution.summary }}
   </pre>
+  {% if solution.att_est %}
   <h4>Distance from solution to onboard estimated attitude</h4>
   <p>
     dyaw {{solution.dyaw}} <br>
@@ -182,6 +183,7 @@ class="with-background"
     Dec={{solution.att_est.dec}} <br>
     Roll={{solution.att_est.roll}} <br>
   </p>
+  {% endif %}
   <p></p>
 
   {% endfor %}
