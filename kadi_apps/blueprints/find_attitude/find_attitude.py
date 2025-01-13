@@ -69,11 +69,16 @@ def get_telem_from_maude(date=None):
     tbl['YAG'] = [out[f"AOACYAN{ii}"] for ii in range(8)]
     tbl['ZAG'] = [out[f"AOACZAN{ii}"] for ii in range(8)]
     tbl['MAG_ACA'] = [out[f"AOACMAG{ii}"] for ii in range(8)]
-    tbl.meta['date_solution'] = CxoTime(results[0]['times'][-1]).date
+
+    # Filter out centroids if position and magnitude indicate not tracking
+    tbl = tbl[(tbl['MAG_ACA'] != 13.94) & (tbl['YAG'] != -3276.80) & (tbl['ZAG'] != -3276.80)]
+
+    date_ref = CxoTime(results[0]['times'][0]).date
+    tbl.meta['date_solution'] = date_ref
 
     quat = Quat(q=[out[f"AOATTQT{ii}"] for ii in [1, 2, 3, 4]])
 
-    return CxoTime(results[0]['times'][-1]).date, tbl, quat
+    return date_ref, tbl, quat
 
 
 
