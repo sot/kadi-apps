@@ -18,6 +18,12 @@ from Quaternion import Quat, normalize
 
 from kadi_apps.rendering import render_template
 
+DEFAULT_CONSTRAINTS = {'distance_tolerance': 2.5,
+            'pitch_err': 1.5,
+            'att_err': 4.0,
+            'mag_err': 1.5,
+            'off_nom_roll_max': 2.0}
+
 POSSIBLE_CONSTRAINTS = ["pitch", "pitch_err",
                         "att", "att_err",
                         "off_nom_roll_max",
@@ -82,12 +88,15 @@ def index():
         context = {}
 
     context['kadi_version'] = __version__
-    context['distance_tolerance'] = float(request.form.get('distance_tolerance', '2.5'))
 
-    # Update some constraints to their default values.
-    context["pitch_err"] = float(request.form.get("pitch_err", 1.5))
-    context["att_err"] = float(request.form.get("att_err", 4.0))
-    context["mag_err"] = float(request.form.get("mag_err", 1.5))
+    # Update some constraints to their default values if not set.
+    for key, value in DEFAULT_CONSTRAINTS.items():
+        form_val = request.form.get(key)
+        if form_val is not None and form_val.strip() != "":
+            value = float(form_val)
+            context[key] = value
+        if key not in context:
+            context[key] = value
 
     if context.get('solutions'):
         context['subtitle'] = ': Solution'
@@ -154,11 +163,6 @@ def find_solutions_and_get_context(action):
         # calculate the pitch
         sun_pitch = ska_sun.pitch(ra=att_est.ra, dec=att_est.dec, time=date)
         context['pitch'] = f"{sun_pitch:.2f}"
-
-        # And the off nominal roll
-        est_off_nominal_roll = ska_sun.off_nominal_roll(att=att_est, time=date)
-        # And just add 2 to whatever it is to seed the constraint for now
-        context['off_nom_roll_max'] = f"{int(np.abs(est_off_nominal_roll)) + 2}"
 
     else:
         context['stars_text'] = stars_text
