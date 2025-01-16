@@ -257,7 +257,7 @@ def find_solutions_and_get_context(action):
             att_est_dq = att_est.dq(solution['att_fit'])
             sol["dyaw"] = att_est_dq.yaw
             sol["dpitch"] = att_est_dq.pitch
-            sol["droll"] = att_est_dq.roll
+            sol["droll"] = att_est_dq.roll0
 
         context['solutions'].append(sol)
 
