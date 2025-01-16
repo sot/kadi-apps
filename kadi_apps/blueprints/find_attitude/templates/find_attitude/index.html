@@ -142,8 +142,8 @@ class="with-background"
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
 
   <P>Date for Pitch/Roll: {{ solution.date }}<br>
-  Sun Pitch: {{ "%.3f" | format(solution.pitch) }}<br>
-  Off-Nominal Roll: {{ "%.3f" | format(solution.roll) }}</P>
+  Sun Pitch: {{ "%.3f" | format(solution.pitch|float) }}<br>
+  Off-Nominal Roll: {{ "%.3f" | format(solution.roll|float) }}</P>
 
   <h4> Coordinates </h4>
 
@@ -189,7 +189,7 @@ class="with-background"
   {% endfor %}
 
 <P><B>Supplied find_attitude Inputs</B></P>
-<pre>{{ inputs}}</pre>
+<pre>{{inputs}}</pre>
 
 <P>find_attitude version: {{find_attitude_version}}</P>
 
