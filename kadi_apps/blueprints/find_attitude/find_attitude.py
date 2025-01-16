@@ -250,13 +250,14 @@ def find_solutions_and_get_context(action):
                'summary': os.linesep.join(summary_lines)}
         sol["date"] = date
         pitch, off_nominal_roll = get_sol_pitch_roll(solution['att_fit'], date)
-        sol['pitch'] = f"{pitch:.3f}"
-        sol['roll'] = f"{off_nominal_roll:.3f}"
+        sol['pitch'] = pitch
+        sol['roll'] = off_nominal_roll
         if att_est is not None:
             sol["att_est"] = att_est
             att_est_dq = att_est.dq(solution['att_fit'])
             sol["dyaw"] = att_est_dq.yaw
             sol["dpitch"] = att_est_dq.pitch
+            sol["droll"] = att_est_dq.roll
 
         context['solutions'].append(sol)
 

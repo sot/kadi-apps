@@ -142,26 +142,26 @@ class="with-background"
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
 
   <P>Date for Pitch/Roll: {{ solution.date }}<br>
-  Sun Pitch: {{ solution.pitch }}<br>
-  Off-Nominal Roll: {{ solution.roll }}</P>
+  Sun Pitch: {{ "%.3f" | format(solution.pitch) }}<br>
+  Off-Nominal Roll: {{ "%.3f" | format(solution.roll) }}</P>
 
   <h4> Coordinates </h4>
 
   <div class="row">
     <div class="large-3 columns">
       <p> <strong>
-          RA={{solution.att_fit.ra}} <br>
-          Dec={{solution.att_fit.dec}} <br>
-          Roll={{solution.att_fit.roll}} <br>
+          RA={{"%.4f" | format(solution.att_fit.ra)}} <br>
+          Dec={{"%.4f" | format(solution.att_fit.dec)}} <br>
+          Roll={{"%.4f" | format(solution.att_fit.roll)}} <br>
           </strong>
       </p>
     </div>
     <div class="large-3 columns end">
-      <p> <strong>
-          Q1={{solution.att_fit.q.0}} <br>
-          Q2={{solution.att_fit.q.1}} <br>
-          Q3={{solution.att_fit.q.2}} <br>
-          Q4={{solution.att_fit.q.3}} <br>
+      <p> <strong>Solution Quaternion: <br>
+        [{{"%.12f" | format(solution.att_fit.q.0)}},
+        {{"%.12f" | format(solution.att_fit.q.1)}},
+        {{"%.12f" | format(solution.att_fit.q.2)}},
+        {{"%.12f" | format(solution.att_fit.q.3)}}] <br>
           </strong>
       </p>
     </div>
@@ -173,14 +173,15 @@ class="with-background"
   {% if solution.att_est %}
   <h4>Distance from solution to onboard estimated attitude</h4>
   <p>
-    dyaw {{solution.dyaw}} <br>
-    dpitch {{solution.dpitch}} <br>
+    dyaw={{ "%.5f" | format(solution.dyaw) }} degrees<br>
+    dpitch={{ "%.5f" | format(solution.dpitch) }} degrees<br>
+    droll={{ "%.5f" | format(solution.droll) }} degrees<br>
   </p>
-  <strong>Onboard estimated attitude</strong>
+  <strong>Estimated attitude</strong>
   <p>
-    RA={{solution.att_est.ra}} <br>
-    Dec={{solution.att_est.dec}} <br>
-    Roll={{solution.att_est.roll}} <br>
+    RA={{"%.4f" | format(solution.att_est.ra)}} <br>
+    Dec={{"%.4f" | format(solution.att_est.dec)}} <br>
+    Roll={{"%.4f" | format(solution.att_est.roll)}} <br>
   </p>
   {% endif %}
   <p></p>
