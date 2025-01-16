@@ -47,6 +47,7 @@ def get_telem_from_maude(date=None):
 
 
     msids = ["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"]
+    msids.extend([f"aoacfid{ii}" for ii in range(8)])
     msids.extend([f"aoacyan{ii}" for ii in range(8)])
     msids.extend([f"aoaczan{ii}" for ii in range(8)])
     msids.extend([f"aoacmag{ii}" for ii in range(8)])
@@ -66,9 +67,16 @@ def get_telem_from_maude(date=None):
 
     tbl = Table()
     tbl['slot'] = np.arange(8)
+    tbl["AOACFID"] = [out[f"AOACFID{ii}"] for ii in range(8)]
     tbl['YAG'] = [out[f"AOACYAN{ii}"] for ii in range(8)]
     tbl['ZAG'] = [out[f"AOACZAN{ii}"] for ii in range(8)]
     tbl['MAG_ACA'] = [out[f"AOACMAG{ii}"] for ii in range(8)]
+
+    # Cut fid lights if explicitly labeled as such
+    tbl = tbl[(tbl["AOACFID"] != "FID")]
+
+    # Remove the fid light column
+    tbl = tbl["slot", "YAG", "ZAG", "MAG_ACA"]
 
     # Filter out centroids if position and magnitude indicate not tracking
     tbl = tbl[(tbl['MAG_ACA'] != 13.94) & (tbl['YAG'] != -3276.80) & (tbl['ZAG'] != -3276.80)]
