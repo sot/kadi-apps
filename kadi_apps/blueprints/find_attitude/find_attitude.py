@@ -168,14 +168,19 @@ def find_solutions_and_get_context(action):
 
         # Get a formatted version of the stars table that is used for finding
         # the solutions. This gets put back into the web page output.
-        out = StringIO()
-        stars_context = stars.copy()
-        cols_new = ['yag', 'zag', 'mag']
-        stars_context.rename_columns(['YAG', 'ZAG', 'MAG_ACA'], cols_new)
-        for name in cols_new:
-            stars_context[name].format = '.2f'
-        stars_context.write(out, format='ascii.fixed_width', delimiter=' ')
-        context['stars_text'] = out.getvalue()
+        if len(stars) == 0:
+            context["stars_text"] = "No tracked stars."
+        else:
+            out = StringIO()
+            stars_context = stars.copy()
+            cols_new = ['yag', 'zag', 'mag']
+            stars_context.rename_columns(['YAG', 'ZAG', 'MAG_ACA'], cols_new)
+            for name in cols_new:
+                stars_context[name].format = '.2f'
+            stars_context.write(out, format='ascii.fixed_width', delimiter=' ')
+            context['stars_text'] = out.getvalue()
+
+
         context['date_solution'] = date
         context['att'] = f"{att_est.q[0]:.8f}, {att_est.q[1]:.8f}, {att_est.q[2]:.8f}, {att_est.q[3]:.8f}"
 
@@ -193,7 +198,7 @@ def find_solutions_and_get_context(action):
             context['date_solution'] = date_solution
         except Exception as err:
             context['error_message'] = ("{}\n"
-                                        "Does it look like one of the examples?"
+                                        "Does it look like the example?"
                                         .format(err))
             return context
 
