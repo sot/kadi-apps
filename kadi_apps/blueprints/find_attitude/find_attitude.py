@@ -46,11 +46,11 @@ blueprint = Blueprint(
 def get_telem_from_maude(date=None):
 
 
-    msids = ["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"]
-    msids.extend([f"aoacfid{ii}" for ii in range(8)])
-    msids.extend([f"aoacyan{ii}" for ii in range(8)])
-    msids.extend([f"aoaczan{ii}" for ii in range(8)])
-    msids.extend([f"aoacmag{ii}" for ii in range(8)])
+    msids = []
+    for msid_root in ["aoacfct", "aoacfid", "aoacyan", "aoaczan", "aoacmag"]:
+        msids.extend([f"{msid_root}{ii}" for ii in range(8)])
+    msids.extend(["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"])
+
     if date is not None:
         start = CxoTime(date)
         stop = start + 10 * u.s
@@ -64,6 +64,14 @@ def get_telem_from_maude(date=None):
         msid = result["msid"]
         value = result["values"][-1]
         out[msid] = value
+
+    # Use the time of one of the ACA msids to determine the reference time.
+    # result[0] should be AOACFCT0.
+    # The quaternions are sampled more frequently so if the last time of
+    # one of those is used, an attempt to refetch the data based on
+    # one of those times can fail for the case where one is working with
+    # the last of the realtime telemetry.
+    date_ref = CxoTime(results[0]['times'][-1]).date
 
     tbl = Table()
     tbl['slot'] = np.arange(8)
