@@ -197,17 +197,18 @@ def find_solutions_and_get_context(action):
             stars = get_stars_from_text(stars_text)
             context['date_solution'] = date_solution
         except Exception as err:
-            context['error_message'] = ("{}\n"
-                                        "Does it look like the example?"
-                                        .format(err))
+            context['error_message'] = (f"{err}\n"
+                                        "Does it look like the example?")
             return context
 
         att_est_text = request.form.get("att", "").strip() or None
         if att_est_text:
             try:
                 att_est = Quat(q=[float(val) for val in att_est_text.split(",")])
-            except Exception:
-                pass
+            except Exception as err:
+                context['error_message'] = (f"{err}\n",
+                                            "Malformed estimated attitude quaternion.")
+                return context
 
     if action == 'gettelem':
         # don't continue to get the solution, just return with the updated context
