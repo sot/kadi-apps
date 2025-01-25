@@ -225,7 +225,12 @@ def find_solutions_and_get_context(action):
 
     if action == 'calc_solution_constraints':
         # And get the constraints for Constraints class
-        constraints = get_constraints_from_form(request.form)
+        try:
+            constraints = get_constraints_from_form(request.form)
+        except Exception as err:
+            context['error_message'] = (f"Error: {err}",
+                                        "Malformed constraints.")
+            return context
         fa_constraints = find_attitude.Constraints(**constraints)
         context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints}"
     else:
