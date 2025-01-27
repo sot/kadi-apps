@@ -3,6 +3,7 @@ import os
 from io import StringIO
 import datetime
 from logging import CRITICAL
+import pprint
 
 import astropy.units as u
 import find_attitude
@@ -232,7 +233,7 @@ def find_solutions_and_get_context(action):
                                         "Malformed constraints.")
             return context
         fa_constraints = find_attitude.Constraints(**constraints)
-        context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={constraints}"
+        context["inputs"] = f"{stars} \n tolerance={tolerance} \n constraints={pprint.pformat(constraints)}"
     else:
         fa_constraints = None
         context["inputs"] = f"{stars} \n tolerance={tolerance}"
