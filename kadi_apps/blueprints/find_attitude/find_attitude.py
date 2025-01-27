@@ -52,6 +52,8 @@ def get_telem_from_maude(date=None):
         msids.extend([f"{msid_root}{ii}" for ii in range(8)])
     msids.extend(["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"])
 
+    start = None
+    stop = None
     if date is not None:
         start = CxoTime(date) - 2 * u.s
         stop = start + 12 * u.s
@@ -63,6 +65,8 @@ def get_telem_from_maude(date=None):
     out = {}
     for result in results:
         msid = result["msid"]
+        if len(result["values"]) == 0:
+            raise ValueError(f"No data for {msid} in time range date={date} start={start} stop={stop}")
         value = result["values"][-1]
         out[msid] = value
 
@@ -165,7 +169,12 @@ def find_solutions_and_get_context(action):
     if stars_text.strip() == '' or action == 'gettelem':
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
-        date, stars, att_est = get_telem_from_maude(date_solution)
+        try:
+            date, stars, att_est = get_telem_from_maude(date_solution)
+        except Exception as err:
+            context['error_message'] = (f"{err}\n",
+                                        f"Could not fetch telemetry at date={date_solution}.")
+            return context
 
         # Get a formatted version of the stars table that is used for finding
         # the solutions. This gets put back into the web page output.
