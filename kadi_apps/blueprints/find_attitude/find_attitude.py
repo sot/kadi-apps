@@ -46,15 +46,14 @@ blueprint = Blueprint(
 
 def get_telem_from_maude(date=None):
 
-
     msids = []
     for msid_root in ["aoacfct", "aoacfid", "aoacyan", "aoaczan", "aoacmag"]:
         msids.extend([f"{msid_root}{ii}" for ii in range(8)])
     msids.extend(["aoattqt1", "aoattqt2", "aoattqt3", "aoattqt4"])
 
     if date is not None:
-        start = CxoTime(date)
-        stop = start + 10 * u.s
+        start = CxoTime(date) - 2 * u.s
+        stop = start + 12 * u.s
         kwargs = {'start': start, 'stop': stop}
     else:
         kwargs = {}
