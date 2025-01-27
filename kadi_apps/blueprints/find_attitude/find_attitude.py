@@ -1,6 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 import os
 from io import StringIO
+import datetime
 from logging import CRITICAL
 
 import astropy.units as u
@@ -256,6 +257,9 @@ def find_solutions_and_get_context(action):
     date = context.get("date_solution", None)
     date = CxoTime(date) if date else CxoTime.now()
 
+    # Save time solution was calulate as a string in local time with AM/PM
+    generation_time = f"{datetime.datetime.now():%I:%M:%S%p on %Y-%m-%d}"
+
     context['solutions'] = []
     for solution in solutions:
         tbl = solution['summary']
@@ -276,6 +280,7 @@ def find_solutions_and_get_context(action):
             sol["dpitch"] = att_est_dq.pitch
             sol["droll"] = att_est_dq.roll0
 
+        sol['generation_time'] = generation_time
         context['solutions'].append(sol)
 
     return context
