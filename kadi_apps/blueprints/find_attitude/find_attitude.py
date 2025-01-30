@@ -2,6 +2,7 @@
 import os
 from io import StringIO
 import datetime
+import pytz
 from logging import CRITICAL
 import pprint
 
@@ -267,7 +268,10 @@ def find_solutions_and_get_context(action):
     date = CxoTime(date) if date else CxoTime.now()
 
     # Save time solution was calulate as a string in local time with AM/PM
-    generation_time = f"{datetime.datetime.now():%I:%M:%S%p on %Y-%m-%d}"
+    # Replace 'America/New_York' with your local time zone
+    local_tz = pytz.timezone('America/New_York')
+    local_time = datetime.datetime.now(local_tz)
+    generation_time = local_time.strftime("%I:%M:%S%p %Z on %Y-%m-%d")
 
     context['solutions'] = []
     for solution in solutions:
