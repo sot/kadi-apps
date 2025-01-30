@@ -21,7 +21,7 @@ from Quaternion import Quat, normalize
 
 from kadi_apps.rendering import render_template
 
-DEFAULT_CONSTRAINTS = {'distance_tolerance': 2.5,
+DEFAULT_CONSTRAINTS = {'distance_tolerance': 3.0,
             'pitch_err': 1.5,
             'att_err': 4.0,
             'mag_err': 1.5,
