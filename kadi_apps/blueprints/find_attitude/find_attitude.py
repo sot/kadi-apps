@@ -66,11 +66,11 @@ def get_telem_from_maude(date=None):
     out = {}
     for result in results:
         msid = result["msid"]
-        values = result["values"]
+        values = np.array(result["values"])
         if len(values) == 0:
             raise ValueError(f"No data for {msid} in time range date={date} start={start} stop={stop}")
-        if msid.startswith("aoacyan", "aoaczan", "aoacmag"):
-            if len(result["values"]) < 6:
+        if msid.lower().startswith(("aoacyan", "aoaczan", "aoacmag")):
+            if len(values) < 6:
                 value = np.median(values)
             else:
                 values = np.sort(values)
