@@ -56,7 +56,7 @@ def get_telem_from_maude(date=None):
     start = None
     stop = None
     if date is not None:
-        start = CxoTime(date) - 2 * u.s
+        start = CxoTime(date) - 5 * u.s
         stop = start + 12 * u.s
         kwargs = {'start': start, 'stop': stop}
     else:
@@ -66,9 +66,17 @@ def get_telem_from_maude(date=None):
     out = {}
     for result in results:
         msid = result["msid"]
-        if len(result["values"]) == 0:
+        values = result["values"]
+        if len(values) == 0:
             raise ValueError(f"No data for {msid} in time range date={date} start={start} stop={stop}")
-        value = result["values"][-1]
+        if msid.startswith("aoacyan", "aoaczan", "aoacmag"):
+            if len(result["values"]) < 6:
+                value = np.median(values)
+            else:
+                values = np.sort(values)
+                value = np.mean(values[2:-2])
+        else:
+            value = values[-1]
         out[msid] = value
 
     # Use the time of one of the ACA msids to determine the reference time.
@@ -77,7 +85,7 @@ def get_telem_from_maude(date=None):
     # one of those is used, an attempt to refetch the data based on
     # one of those times can fail for the case where one is working with
     # the last of the realtime telemetry.
-    date_ref = CxoTime(results[0]['times'][-1]).date
+    date_ref = CxoTime(np.mean(results[0]['times'])).date
 
     tbl = Table()
     tbl['slot'] = np.arange(8)
