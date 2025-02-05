@@ -121,7 +121,7 @@ class="with-background"
 </div>
 
 {% if error_message %}
-  <h2> ERROR </h2>
+  <h2> ERROR generated at {{ generation_time }} </h2>
   <pre>
     {{ error_message }}
   </pre>
@@ -131,8 +131,9 @@ class="with-background"
 {% endif %}
 
 {% if solutions %}
+    <h2> Attitude solution generated at {{ generation_time }} </h2>
+
   {% for solution in solutions %}
-  <h2> Attitude solution generated at {{ solution.generation_time }} </h2>
 
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
 

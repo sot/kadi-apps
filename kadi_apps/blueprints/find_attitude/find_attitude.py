@@ -112,6 +112,11 @@ def index():
     else:
         context = {}
 
+    local_tz = pytz.timezone('America/New_York')
+    local_time = datetime.datetime.now(local_tz)
+    generation_time = local_time.strftime("%I:%M:%S%p %Z on %Y-%m-%d")
+
+    context['generation_time'] = generation_time
     context['kadi_version'] = __version__
 
     # Update some constraints to their default values if not set.
@@ -266,11 +271,6 @@ def find_solutions_and_get_context(action):
     date = context.get("date_solution", None)
     date = CxoTime(date) if date else CxoTime.now()
 
-    # Save time solution was calulate as a string in local time with AM/PM
-    # Replace 'America/New_York' with your local time zone
-    local_tz = pytz.timezone('America/New_York')
-    local_time = datetime.datetime.now(local_tz)
-    generation_time = local_time.strftime("%I:%M:%S%p %Z on %Y-%m-%d")
 
     context['solutions'] = []
     for solution in solutions:
@@ -292,7 +292,6 @@ def find_solutions_and_get_context(action):
             sol["dpitch"] = att_est_dq.pitch
             sol["droll"] = att_est_dq.roll0
 
-        sol['generation_time'] = generation_time
         context['solutions'].append(sol)
 
     return context
