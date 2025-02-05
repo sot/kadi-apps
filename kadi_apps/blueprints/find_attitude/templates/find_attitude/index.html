@@ -169,9 +169,9 @@ class="with-background"
   {% if solution.att_est %}
   <h4>Distance from solution to onboard estimated attitude</h4>
   <p>
-    dyaw={{ "%.5f" | format(solution.dyaw) }} degrees<br>
-    dpitch={{ "%.5f" | format(solution.dpitch) }} degrees<br>
-    droll={{ "%.5f" | format(solution.droll) }} degrees<br>
+    dyaw={{ "%.5f" | format(solution.dyaw) }} degrees ({{ "%.1f" | format(solution.dyaw_arcsec) }} arcsec)<br>
+    dpitch={{ "%.5f" | format(solution.dpitch) }} degrees ({{ "%.1f" | format(solution.dpitch_arcsec) }} arcsec)<br>
+    droll={{ "%.5f" | format(solution.droll) }} degrees ({{ "%.1f" | format(solution.droll_arcsec) }} arcsec)<br>
   </p>
   <strong>Estimated attitude</strong>
   <p>
