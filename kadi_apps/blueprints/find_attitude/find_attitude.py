@@ -148,8 +148,7 @@ def get_constraints_from_form(form):
                     form_val = normalize([float(val) for val in form_val.split(",")])
                 else:
                     form_val = float(form_val)
-        if form_val is not None:
-            constraints[constraint] = form_val
+        constraints[constraint] = form_val
 
     date = form.get('date_solution', '').strip() or None
     constraints['date'] = date
