@@ -57,7 +57,7 @@ def get_telem_from_maude(date=None):
     stop = None
     if date is not None:
         start = CxoTime(date) - 5 * u.s
-        stop = start + 12 * u.s
+        stop = start + 10 * u.s
         kwargs = {'start': start, 'stop': stop}
     else:
         kwargs = {}
@@ -85,7 +85,7 @@ def get_telem_from_maude(date=None):
     # one of those is used, an attempt to refetch the data based on
     # one of those times can fail for the case where one is working with
     # the last of the realtime telemetry.
-    date_ref = CxoTime(np.mean(results[0]['times'])).date
+    date_ref = CxoTime(np.median(results[0]['times'])).date
 
     tbl = Table()
     tbl['slot'] = np.arange(8)
