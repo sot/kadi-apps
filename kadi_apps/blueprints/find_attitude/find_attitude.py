@@ -224,6 +224,7 @@ def find_solutions_and_get_context(action):
                                         "Does it look like the example?")
             return context
 
+
         att_est_text = request.form.get("att", "").strip() or None
         if att_est_text:
             try:
@@ -283,9 +284,9 @@ def find_solutions_and_get_context(action):
     context['solutions'] = []
     for solution in solutions:
         tbl = solution['summary']
-        tbl['YAG'].format = '.2f'
-        tbl['ZAG'].format = '.2f'
-        tbl['MAG_ACA'].format = '.2f'
+        for col in ['YAG', 'ZAG', 'MAG_ACA']:
+            if col in tbl.colnames:
+                tbl[col].format = '.2f'
         summary_lines = tbl.pformat(max_width=-1, max_lines=-1)
         sol = {'att_fit': solution['att_fit'],
                'summary': os.linesep.join(summary_lines)}
