@@ -134,6 +134,8 @@ class="with-background"
     <h2> Attitude solution generated at {{ generation_time }} </h2>
 
   {% for solution in solutions %}
+  <hr></hr>
+  <h3> Solution {{ loop.index }} </h3>
 
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
 
