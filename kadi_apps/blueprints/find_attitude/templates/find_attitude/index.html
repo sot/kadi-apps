@@ -6,7 +6,7 @@ class="with-background"
 
 {% block content %}
 <p><p>
-<h1 align="center"> Find Chandra attitude from stars {{subtitle}}</h1>
+<h1 align="center" style="margin: 0px; padding: 0px;"> Find Chandra attitude from stars {{subtitle}}</h1>
 
 
 <form action="" method="get">
@@ -18,24 +18,26 @@ class="with-background"
     <div class="large-12 columns">
         <p>Choose one of the following options:
         <ul>
-            <li> Enter ACA star data below using either GRETA display A_ACA_ALL
-                or as a simple text table.</li>
-            <li> Leave the Star data field blank and use MAUDE to fetch ACA star data.</li>
+            <li> Enter ACA star data below as a simple text table.</li>
+            <li> Leave the Star data field blank and use MAUDE with the Get Telem button to fetch ACA star data.</li>
             <ul>
                 <li> Enter a date to get the solution at a particular time. </li>
                 <li> Leave the date blank to get the solution at the current time.</li>
             </ul>
         </ul>
-        <br>
-        Click Submit and wait for up to a minute for the attitude solution
-        results.
-        </p>
+	</p>
+        <p>Then run find_attitude with or without constraints</p>
     </div>
 </div>
 
+
+<div id="form">
 <form action="/find_attitude/" method="post">
 
+  <div style="width: 50%; float: left;">
+  <button type="submit" name="action" value="gettelem">Get Telem</button>
   <div class="row">
+    <div class="col">
     <div class="col">
       <label for="distance_tolerance">Distance tolerance (arcsec) </label>
       <input type="text" class="form-control" id="distance_tolerance" name="distance_tolerance" value="{{distance_tolerance}}">
@@ -58,80 +60,140 @@ class="with-background"
       style="font-family:Consolas,Monaco,Lucida Console,Liberation
                Mono,DejaVu Sans Mono,Bitstream Vera Sans Mono,Courier New,
                monospace;"
-        rows="10" cols="80" name="stars_text">{{stars_text}}</textarea>
+        rows="9" cols="80" name="stars_text">{{stars_text}}</textarea>
+    </div>
     </div>
   </div>
-  &nbsp;
+
+  <button type="submit" name="action" value="calc_solution">Find Attitude (no constraints)</button>
+
+  <br></br>
+  <br></br>
+  </div>
+
+  <div style="width: 50%; float: right;">
+  <P><B>Optional Constraints to Limit Star Pair Candidates:</B></P>
   <div class="row">
     <div class="col">
-      <input type="submit" value="Submit">
+      <label for="pitch">Sun Pitch (degrees)</label>
+      <input type="text" class="form-control" id="pitch" name="pitch" value="{{pitch}}">
+    </div>
+    <div class="col">
+      <label for="pitch_err">Sun Pitch Uncertainty (degrees)</label>
+      <input type="text" class="form-control" id="pitch_err" name="pitch_err" value="{{pitch_err}}">
     </div>
   </div>
+  <div class="row">
+    <div class="col">
+      <label for="att">Estimated Attitude (supply as q1, q2, q3, q4)</label>
+      <input type="text" class="form-control" id="att" name="att" value="{{att}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="att_err">Estimated Attitude Radial Uncertainty (degrees)</label>
+      <input type="text" class="form-control" id="att_err" name="att_err" value="{{att_err}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="off_nom_roll_max">Max Off-Nominal Roll (degrees)</label>
+      <input type="text" class="form-control" id="off_nom_roll_max" name="off_nom_roll_max" value="{{off_nom_roll_max}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="min_stars">Min Required Stars (leave blank or discuss with ACA)</label>
+      <input type="text" class="form-control" id="min_stars" name="min_stars" value="{{min_stars}}">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label for="mag_err">Max Diff Between Observed - AGASC Star Mag</label>
+      <input type="text" class="form-control" id="mag_err" name="mag_err" value="{{mag_err}}">
+    </div>
+  </div>
+  <button type="submit" name="action" value="calc_solution_constraints">Find Attitude with Constraints</button>
+  </div>
+
 </form>
+<br style="clear:both;"/>
+</div>
 
 {% if error_message %}
-  <h2> ERROR </h2>
+  <h2> ERROR generated at {{ generation_time }} </h2>
   <pre>
     {{ error_message }}
+  </pre>
+  <pre>
+    {{ inputs }}
   </pre>
 {% endif %}
 
 {% if solutions %}
+    <h2> Attitude solution generated at {{ generation_time }} </h2>
+
   {% for solution in solutions %}
-  <h2> Attitude solution </h2>
+  <hr></hr>
+  <h3> Solution {{ loop.index }} </h3>
 
   <p> Distance tolerance: {{ distance_tolerance }} arcsec. </p>
+
+  <P>Date for Pitch/Roll: {{ solution.date }}<br>
+  Sun Pitch: {{ "%.3f" | format(solution.pitch|float) }}<br>
+  Off-Nominal Roll: {{ "%.3f" | format(solution.roll|float) }}</P>
 
   <h4> Coordinates </h4>
 
   <div class="row">
     <div class="large-3 columns">
       <p> <strong>
-          RA={{solution.att_fit.ra}} <br>
-          Dec={{solution.att_fit.dec}} <br>
-          Roll={{solution.att_fit.roll}} <br>
+          RA={{"%.4f" | format(solution.att_fit.ra)}} <br>
+          Dec={{"%.4f" | format(solution.att_fit.dec)}} <br>
+          Roll={{"%.4f" | format(solution.att_fit.roll)}} <br>
           </strong>
       </p>
     </div>
     <div class="large-3 columns end">
-      <p> <strong>
-          Q1={{solution.att_fit.q.0}} <br>
-          Q2={{solution.att_fit.q.1}} <br>
-          Q3={{solution.att_fit.q.2}} <br>
-          Q4={{solution.att_fit.q.3}} <br>
+      <p> <strong>Solution Quaternion: <br>
+        [{{"%.12f" | format(solution.att_fit.q.0)}},
+        {{"%.12f" | format(solution.att_fit.q.1)}},
+        {{"%.12f" | format(solution.att_fit.q.2)}},
+        {{"%.12f" | format(solution.att_fit.q.3)}}] <br>
           </strong>
       </p>
     </div>
   </div>
-  <pre>
   <h4> Star match summary and residuals </h4>
+  <pre>
 {{ solution.summary }}
   </pre>
+  {% if solution.att_est %}
+  <h4>Distance from solution to onboard estimated attitude</h4>
+  <p>
+    dyaw={{ "%.5f" | format(solution.dyaw) }} degrees ({{ "%.1f" | format(solution.dyaw_arcsec) }} arcsec)<br>
+    dpitch={{ "%.5f" | format(solution.dpitch) }} degrees ({{ "%.1f" | format(solution.dpitch_arcsec) }} arcsec)<br>
+    droll={{ "%.5f" | format(solution.droll) }} degrees ({{ "%.1f" | format(solution.droll_arcsec) }} arcsec)<br>
+  </p>
+  <strong>Estimated attitude</strong>
+  <p>
+    RA={{"%.4f" | format(solution.att_est.ra)}} <br>
+    Dec={{"%.4f" | format(solution.att_est.dec)}} <br>
+    Roll={{"%.4f" | format(solution.att_est.roll)}} <br>
+  </p>
+  {% endif %}
+  <p></p>
+
   {% endfor %}
+
+<P><B>Supplied find_attitude Inputs</B></P>
+<pre>{{inputs}}</pre>
+
+<P>find_attitude version: {{find_attitude_version}}</P>
 
 {% else %}
   <h2> Example inputs </h2>
-  <h3> GRETA copy/paste </h3>
-<pre>
-Northrop Grumman/FOT Decom v1.2                                                             SC:2015007.060558  Fri Feb 27 17:35:04 2015
-COMMAND>
-                                     PCAD MODE   NPNT     TLM FORMAT   FMT2       CTU VCDU   2156840     AODITHEN        DISA
-ASPECT CAMERA TELEMETRY              AOCONLAW    NPNT     TLM SUBFMT   NORM       OBC VCDU   2156832     AODITHR1  0.0000e+00
-                                     AOABERRN    DISA     AOFATTUP     NONE       AOETIMEX 473925968     AODITHR2  0.0000e+00
-     OBSID      0                    AOACINTT  704.688    AOACPRGS        0       AOCINTNP      ENAB     AODITHR3  0.0000e+00
 
-                                                                        AOFWAIT  NOWT      Acquisition
-   ACA     IMAGE Status  Image   Fid Lt      Centroid Angle     Star    AOACASEQ KALM        Success        GLOBAL STATUS
-   MEAS      #   Flags   Functn  Flag        Y         Z        Mag     AOFSTAR  BRIT     AORFSTR1    6     AOACPWRF   OK
-  IMAGE 0  0     STAR    TRAK   STAR     -381.28    1479.95      7.2    AONSTARS    7     AORFSTR2    7     AOACRAMF   OK
-  IMAGE 1  1     STAR    TRAK   STAR     -582.55    -830.85      8.9    AOKALSTR    7                       AOACROMF   OK
-  IMAGE 2  2     STAR    TRAK   STAR     2076.33   -2523.10      8.5                      ENTRY 0    ID     AOACSUMF   OK
-  IMAGE 3  3     STAR    TRAK   STAR     -498.12    -958.33      5.0    SUCCESS FLAGS     ENTRY 1  NOID     AOACHIBK   OK
-  IMAGE 4  4     STAR    TRAK   STAR     -431.68    1600.98      8.2    AOACQSUC NSUC     ENTRY 2    ID
-  IMAGE 5  5     STAR    TRAK   STAR     -282.40     980.50      7.9    AOGDESUC NSUC     ENTRY 3    ID     AOACCALF   OK
-  IMAGE 6  6     NULL    NONE   STAR    -3276.80   -3276.80     13.9    AOBRTSUC  SUC     ENTRY 4    ID     AOACRSET   OK
-  IMAGE 7  7     STAR    TRAK   STAR      573.25   -2411.70      7.1    AOFIDSUC NSUC     ENTRY 5    ID     AOACSNTY   OK
-</pre>
 <h3> Simple text table </h3>
 <pre>
 slot yag zag mag
