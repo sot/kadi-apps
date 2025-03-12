@@ -245,7 +245,7 @@ def find_solutions_and_get_context(action):
         return context
 
     # Try to find solutions
-    tolerance = float(request.form.get('distance_tolerance', '2.5'))
+    tolerance = float(request.form.get('distance_tolerance', '3.0'))
 
     # Keep any constraints in the form for next submission
     for constraint in POSSIBLE_CONSTRAINTS:
