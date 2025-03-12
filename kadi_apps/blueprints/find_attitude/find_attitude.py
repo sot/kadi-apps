@@ -48,7 +48,6 @@ blueprint = Blueprint(
 
 
 def get_telem_from_maude(date=None, channel="FLIGHT"):
-
     msids = []
     for msid_root in ["aoacfct", "aoacfid", "aoacyan", "aoaczan", "aoacmag"]:
         msids.extend([f"{msid_root}{ii}" for ii in range(8)])
@@ -62,7 +61,7 @@ def get_telem_from_maude(date=None, channel="FLIGHT"):
         kwargs = {'start': start, 'stop': stop}
     else:
         kwargs = {}
-    dat = get_msids(msids, **kwargs)
+    dat = get_msids(msids, **kwargs, channel=channel)
     results = dat["data"]
     out = {}
     for result in results:
@@ -184,8 +183,9 @@ def find_solutions_and_get_context(action):
     stars_text = request.form.get('stars_text', '')
     context = {}
     att_est = None
+    maude_channel = request.form.get('maude_channel', 'FLIGHT')
+    context["maude_channel"] = maude_channel
     if stars_text.strip() == '' or action == 'gettelem':
-        maude_channel = request.form.get('maude_channel', 'FLIGHT')
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
         try:
