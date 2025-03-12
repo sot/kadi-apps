@@ -15,16 +15,17 @@ from astropy.table import Table, Column
 import astropy.units as u
 from Quaternion import Quat
 import kadi.commands.states
+from kadi.commands import observations
 import ska_quatutil
 import mica.starcheck
 from pathlib import Path
-import ska_dbi
 import agasc
 from ska_helpers import retry
+import maude
 
 from maude.config import conf as maude_conf
 
-
+# This app uses only the CXC data source with fetch
 fetch.data_source.set('cxc')
 
 msids = [
@@ -112,19 +113,21 @@ def deltas_vs_obc_quat(vals, times, catalog):
     return dy, dz
 
 
-def get_time(obsid_or_date):
+def get_acq_date_for_obsid(obsid, load_name=None):
     """
     Get the NPNT start time for an obsid (or the NPNT start time for a catalog associated with a date)
 
     Parameters
     ----------
-    obsid_or_date : int or str
-        The obsid or the date associated with the catalog.
+    obsid : int
+        The obsid.
+    load_name : str
+        The load name (optional)
 
     Returns
     -------
     start_time : str
-        The NPNT start time for the given obsid or date.
+        The NPNT start time for the given obsid.
 
     Raises
     ------
@@ -132,85 +135,53 @@ def get_time(obsid_or_date):
         If the obsid is not valid.
 
     """
-
-    start_time = None
-    try:
-        obsid = int(obsid_or_date)
-    except ValueError:
-        obsid = get_obsid_for_date(obsid_or_date)
-
-    if obsid < 90000:
-        start_time = get_time_for_obsid(obsid)
+    print(f"Getting acquisition date for obsid {obsid} with load {load_name}")
+    if load_name.strip() == "":
+        return get_time_for_obsid_from_cmds(obsid)
     else:
-        raise ValueError("Weird obsid: {}".format(obsid))
-
-    return start_time
-
-@retry.retry(tries=3, delay=2)
-def get_obsid_for_date(date):
-    """
-    Get the obsid for a starcheck catalog associated with a date.
-    """
-    starcheck = mica.starcheck.get_starcheck_catalog_at_date(date)
-    if "obs" not in starcheck:
-        raise ValueError("No starcheck catalog found for {}".format(date))
-    if "obsid" not in starcheck["obs"]:
-        raise ValueError("No obsid found in starcheck catalog for {}".format(date))
-    return starcheck['obs']['obsid']
+        return get_time_for_obsid_from_starcheck(obsid, load_name)
 
 
 def get_time_for_obsid_from_cmds(obsid):
     """
     Get the NPNT start time for an obsid from kadi.
     """
+    obss = observations.get_observations(obsid=obsid)
+    # Skip observations with src CMD_EVT for now and skip observations with npnt_enab=False
+    for obs in obss:
+        if obs["source"] == "CMD_EVT" or obs["npnt_enab"] == False:
+            continue
+        break
+    print(obs)
+    return get_closest_npnt_start_time(obs["obs_start"])
 
-    # Get recent states, as the obsid should basically be in kadi manvr events otherwise
-    states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
-        merge_identical=True, state_keys=['pcad_mode', 'obsid'])
-    ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
+
+@retry.retry(tries=3, delay=1)
+def get_closest_npnt_start_time(date):
+    """
+    Get the closest NPNT start time for a given date.
+    """
+    # Get the closest NPNT mode to the date
+    states = kadi.commands.states.get_states(
+        start=CxoTime(date) - 3.5 * u.day,
+        stop=CxoTime(date) + 3.5 * u.day,
+        merge_identical=True, state_keys=['pcad_mode'])
+    ok = states['pcad_mode'] == 'NPNT'
     if not np.any(ok):
-        raise ValueError(f"No recent NPNT mode found for obsid {obsid}")
-    return states['tstart'][ok][0]
+        raise ValueError(f"No NPNT mode found for date {date}")
+    # Return the start time of the closest NPNT mode
+    dtime = states["tstart"][ok] - CxoTime(date).secs
+    return states["tstart"][ok][np.argmin(np.abs(dtime))]
 
 
-def get_time_for_obsid_from_starcheck_db(obsid):
-    # For odd cases, try "around" the times in starcheck database
-    starcheck_db_file = (Path(os.environ['SKA'])
-                            / 'data' / 'mica' / 'archive' / 'starcheck' / 'starcheck.db3')
-    with ska_dbi.DBI(dbi='sqlite', server=starcheck_db_file) as db:
-        matches = db.fetchall(f"select * from starcheck_obs where obsid = {obsid}")
-    dates = matches["mp_starcat_time"]
-    for date in dates:
-        states = kadi.commands.states.get_states(
-            start=CxoTime(date) - 3.5 * u.day,
-            stop=CxoTime(date) + 3.5 * u.day,
-            merge_identical=True, state_keys=['pcad_mode', 'obsid'])
-        ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
-        if np.any(ok):
-            return states['tstart'][ok][0]
-    raise ValueError(f"No NPNT mode found for obsid {obsid}")
+def get_time_for_obsid_from_starcheck(obsid, load_name):
+    starcat = mica.starcheck.get_starcheck_catalog(obsid, mp_dir=load_name)
+    if starcat is None or "obs" not in starcat:
+        raise ValueError(f"No starcheck catalog found for obsid {obsid}")
+    date = starcat["manvr"][-1]["end_date"]
+    return get_closest_npnt_start_time(date)
 
 
-
-def get_time_for_obsid(obsid):
-    """
-    Get the NPNT start time for an obsid from either kadi manvr events or command states.
-    """
-    try:
-        manvrs = events.manvrs.filter(obsid=obsid)
-        if not len(manvrs):
-            raise ValueError("No manvr found for obsid {}".format(obsid))
-        manvr = manvrs[0]
-        start_time = CxoTime(manvr.acq_start).secs
-        return start_time
-    except Exception:
-        try:
-            start_time = get_time_for_obsid_from_cmds(obsid)
-        except Exception:
-            start_time = get_time_for_obsid_from_starcheck_db(obsid)
-        return start_time
-
-import maude
 def get_maude_telem(msids, start_time, stop_time):
     # Get the data directly from maude instead of cheta
     with maude_conf.set_temp("timeout", (2)):
@@ -244,21 +215,16 @@ def get_cxc_telem(msids, start_time, stop_time):
     return telem_dict
 
 
-def get_acq_table(obsid_or_date):
+def get_acq_table(start_time):
     """
     Retrieve the acquisition data for an obsid or date.
     """
-
-    start_time = get_time(obsid_or_date)
-
-    if start_time is None:
-        raise ValueError("No start time found for {}".format(obsid_or_date))
 
     if CxoTime(start_time).date < '2002:007':
         raise ValueError("Tool not available for obsids before 2002:007")
 
     stop_time = start_time + (60 * 5)
-    print(f"Getting acquisition data for obsid {obsid_or_date} from {start_time} to {stop_time}")
+    print(f"Getting acquisition data from {CxoTime(start_time).date} to {CxoTime(stop_time).date}")
 
     # Just use a reference MSID to figure out if CXC telem covers this enough
     _, vcdu_msid_stop = fetch.get_time_range("CVCDUCTR")
@@ -298,7 +264,7 @@ def get_acq_table(obsid_or_date):
             for idx, time in enumerate(times):
                 data_idx = np.searchsorted(acq_data[col]["times"], time)
                 if data_idx < len(acq_data[col]["times"]):
-                    acq_data_masked[col][idx] = acq_data[col]["times"][data_idx]
+                    acq_data_masked[col][idx] = acq_data[col]["vals"][data_idx]
             continue
 
         # For the other MSIDs, paste them into a grid of ACA times

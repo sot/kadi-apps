@@ -23,27 +23,44 @@ class="with-background"
 <h1 align="center"> PCAD Acquisition Table </h1>
 
 
-<form action="" method="get">
+<form action="" method="post">
   &nbsp;
   <div class="form-group row">
-    <div class="col-sm"> </div>
-    <label class="col-1 col-form-label" for="obsid_in">OBSID or Date</label>
-    <div class="col-4">
-      <input type="text" class="form-control" id="obsid_in" name="obsid_or_date"
-      {% if obsid != '' %} placeholder="{{obsid_or_date}}"  value="{{obsid_or_date}}" {% endif %}
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="date">Date</label>
+    <div class="col-sm-6">
+      <input type="text" class="form-control" id="date" name="date"
+      {% if obsid != '' %} placeholder="{{date}}"  value="{{date}}" {% endif %}
       >
     </div>
-    <div class="col-sm"> </div>
+    <div class="col-sm-2"> </div>
   </div>
   <div class="form-group row">
-    <div class="col-sm"> </div>
-    <label class="col-1 col-form-label" for="load_name">Load Name</label>
-    <div class="col-4">
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="obsid_in">Obsid</label>
+    <div class="col-sm-6">
+      <input type="text" class="form-control" id="obsid_in" name="obsid"
+      {% if obsid != '' %} placeholder="{{obsid}}"  value="{{obsid}}" {% endif %}
+      >
+    </div>
+    <div class="col-sm-2"> </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="load_name">Load Name</label>
+    <div class="col-sm-6">
       <input type="text" class="form-control" id="load_name" name="load_name"
       {% if load_name != '' %} placeholder="{{load_name}}"  value="{{load_name}}" {% endif %}
       >
     </div>
-    <div class="col-sm"> </div>
+    <div class="col-sm-2"> </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-sm-2"> </div>
+    <div class="col-sm-8">
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+    <div class="col-sm-2"> </div>
   </div>
 </form>
 
