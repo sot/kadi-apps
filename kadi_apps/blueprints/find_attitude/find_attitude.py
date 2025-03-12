@@ -22,6 +22,7 @@ from Quaternion import Quat, normalize
 from kadi_apps.rendering import render_template
 
 DEFAULT_CONSTRAINTS = {'distance_tolerance': 3.0,
+                       'maude_channel': 'FLIGHT',
             'pitch_err': 1.5,
             'att_err': 4.0,
             'mag_err': 1.5,
@@ -46,7 +47,7 @@ blueprint = Blueprint(
 )
 
 
-def get_telem_from_maude(date=None):
+def get_telem_from_maude(date=None, channel="FLIGHT"):
 
     msids = []
     for msid_root in ["aoacfct", "aoacfid", "aoacyan", "aoaczan", "aoacmag"]:
@@ -130,9 +131,13 @@ def index():
     # Update some constraints to their default values if not set.
     for key, value in DEFAULT_CONSTRAINTS.items():
         form_val = request.form.get(key)
-        if form_val is not None and form_val.strip() != "":
-            value = float(form_val)
-            context[key] = value
+        if form_val is not None and form_val.strip() == "":
+            if key == 'maude_channel':
+                value = form_val
+                context[key] = value
+            else:
+                value = float(form_val)
+                context[key] = value
         if key not in context:
             context[key] = value
 
@@ -180,10 +185,11 @@ def find_solutions_and_get_context(action):
     context = {}
     att_est = None
     if stars_text.strip() == '' or action == 'gettelem':
+        maude_channel = request.form.get('maude_channel', 'FLIGHT')
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
         try:
-            date, stars, att_est = get_telem_from_maude(date_solution)
+            date, stars, att_est = get_telem_from_maude(date_solution, channel=maude_channel)
         except Exception as err:
             context['error_message'] = (f"{err}\n",
                                         f"Could not fetch telemetry at date={date_solution}.")
