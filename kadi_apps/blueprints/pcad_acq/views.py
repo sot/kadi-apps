@@ -5,6 +5,7 @@ from kadi_apps.rendering import render_template
 
 from .pcad_table import get_acq_table, get_acq_date_for_obsid, get_closest_npnt_start_time
 
+
 blueprint = Blueprint('pcad_acq_blueprint', __name__, template_folder='templates')
 
 
@@ -18,8 +19,6 @@ def pcad_acq():
         obsid= request.form.get('obsid', '')
         date = request.form.get('date', '')
         load_name = request.form.get('load_name', '')
-        print(type(load_name))
-        print(f"obsid={obsid}, date={date}, load_name={load_name}")
         if obsid.strip() is not '':
             acq_date = get_acq_date_for_obsid(int(obsid), load_name=load_name)
         elif date.strip() is not '':

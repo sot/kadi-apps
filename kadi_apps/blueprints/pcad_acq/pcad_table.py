@@ -154,7 +154,6 @@ def get_time_for_obsid_from_cmds(obsid):
     return get_closest_npnt_start_time(obs["obs_start"])
 
 
-@retry.retry(tries=3, delay=1)
 def get_closest_npnt_start_time(date):
     """
     Get the closest NPNT start time for a given date.
