@@ -20,8 +20,12 @@ import mica.starcheck
 from pathlib import Path
 import ska_dbi
 import agasc
+from ska_helpers import retry
 
-fetch.data_source.set('cxc', 'maude allow_subset=False')
+from maude.config import conf as maude_conf
+
+
+fetch.data_source.set('cxc')
 
 msids = [
     "CVCDUCTR",
@@ -142,12 +146,16 @@ def get_time(obsid_or_date):
 
     return start_time
 
-
+@retry.retry(tries=3, delay=2)
 def get_obsid_for_date(date):
     """
     Get the obsid for a starcheck catalog associated with a date.
     """
     starcheck = mica.starcheck.get_starcheck_catalog_at_date(date)
+    if "obs" not in starcheck:
+        raise ValueError("No starcheck catalog found for {}".format(date))
+    if "obsid" not in starcheck["obs"]:
+        raise ValueError("No obsid found in starcheck catalog for {}".format(date))
     return starcheck['obs']['obsid']
 
 
@@ -160,24 +168,27 @@ def get_time_for_obsid_from_cmds(obsid):
     states = kadi.commands.states.get_states(start=CxoTime.now() - 7 * u.day,
         merge_identical=True, state_keys=['pcad_mode', 'obsid'])
     ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
-    if np.any(ok):
-        return states['tstart'][ok][0]
-    else:
-        # For odd cases, try "around" the times in starcheck database
-        starcheck_db_file = (Path(os.environ['SKA'])
-                             / 'data' / 'mica' / 'archive' / 'starcheck' / 'starcheck.db3')
-        with ska_dbi.DBI(dbi='sqlite', server=starcheck_db_file) as db:
-            matches = db.fetchall(f"select * from starcheck_obs where obsid = {obsid}")
-        dates = matches["mp_starcat_time"]
-        for date in dates:
-            states = kadi.commands.states.get_states(
-                start=CxoTime(date) - 3.5 * u.day,
-                stop=CxoTime(date) + 3.5 * u.day,
-                merge_identical=True, state_keys=['pcad_mode', 'obsid'])
-            ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
-            if np.any(ok):
-                return states['tstart'][ok][0]
-        raise ValueError(f"No NPNT mode found for obsid {obsid}")
+    if not np.any(ok):
+        raise ValueError(f"No recent NPNT mode found for obsid {obsid}")
+    return states['tstart'][ok][0]
+
+
+def get_time_for_obsid_from_starcheck_db(obsid):
+    # For odd cases, try "around" the times in starcheck database
+    starcheck_db_file = (Path(os.environ['SKA'])
+                            / 'data' / 'mica' / 'archive' / 'starcheck' / 'starcheck.db3')
+    with ska_dbi.DBI(dbi='sqlite', server=starcheck_db_file) as db:
+        matches = db.fetchall(f"select * from starcheck_obs where obsid = {obsid}")
+    dates = matches["mp_starcat_time"]
+    for date in dates:
+        states = kadi.commands.states.get_states(
+            start=CxoTime(date) - 3.5 * u.day,
+            stop=CxoTime(date) + 3.5 * u.day,
+            merge_identical=True, state_keys=['pcad_mode', 'obsid'])
+        ok = (states['pcad_mode'] == 'NPNT') & (states['obsid'] == obsid)
+        if np.any(ok):
+            return states['tstart'][ok][0]
+    raise ValueError(f"No NPNT mode found for obsid {obsid}")
 
 
 
@@ -193,10 +204,44 @@ def get_time_for_obsid(obsid):
         start_time = CxoTime(manvr.acq_start).secs
         return start_time
     except Exception:
-        start_time = get_time_for_obsid_from_cmds(obsid)
+        try:
+            start_time = get_time_for_obsid_from_cmds(obsid)
+        except Exception:
+            start_time = get_time_for_obsid_from_starcheck_db(obsid)
         return start_time
-    else:
-        return None
+
+import maude
+def get_maude_telem(msids, start_time, stop_time):
+    # Get the data directly from maude instead of cheta
+    with maude_conf.set_temp("timeout", (2)):
+        telem = retry.retry_call(
+            maude.get_msids,
+            args=[msids],
+            kwargs={'start': start_time, 'stop': stop_time, 'allow_subset': False},
+            tries=4, delay=1)
+    # convert this to a dict of just times and vals by msid
+    telem_dict = {}
+    # telem data is a list of dicts, one per msid
+    for entry in telem["data"]:
+        msid = entry['msid']
+        telem_dict[msid] = {
+            'times': entry["times"],
+            'vals': entry["values"],
+        }
+    return telem_dict
+
+
+def get_cxc_telem(msids, start_time, stop_time):
+    telem = fetch.MSIDset(msids, start_time, stop_time)
+    # convert this to a dict of just times and vals
+    telem_dict = {}
+    for msid in telem:
+        telem_dict[msid] = {
+            'times': telem[msid].times,
+            'vals': telem[msid].vals,
+            'bads': telem[msid].bads
+        }
+    return telem_dict
 
 
 def get_acq_table(obsid_or_date):
@@ -213,11 +258,19 @@ def get_acq_table(obsid_or_date):
         raise ValueError("Tool not available for obsids before 2002:007")
 
     stop_time = start_time + (60 * 5)
-    acq_data = fetch.MSIDset(msids + slot_msids, start_time, stop_time)
+    print(f"Getting acquisition data for obsid {obsid_or_date} from {start_time} to {stop_time}")
+
+    # Just use a reference MSID to figure out if CXC telem covers this enough
+    _, vcdu_msid_stop = fetch.get_time_range("CVCDUCTR")
+    if vcdu_msid_stop < (stop_time + 60 * 5):
+        acq_data = get_maude_telem(msids + slot_msids, start_time, stop_time)
+    else:
+        acq_data = get_cxc_telem(msids + slot_msids, start_time, stop_time)
+
 
     # Find a mod 4 = 0 time to start the data set at beginning of ACA readout
-    four_0 = acq_data['CVCDUCTR'].vals % 4 == 0
-    all_four_0 = acq_data['CVCDUCTR'].times[four_0]
+    four_0 = acq_data['CVCDUCTR']["vals"] % 4 == 0
+    all_four_0 = acq_data['CVCDUCTR']["times"][four_0]
     if len(all_four_0) == 0:
         raise ValueError("No mod 4 = 0 times found in the data set")
 
@@ -225,8 +278,8 @@ def get_acq_table(obsid_or_date):
     # the grid using 4 times the median time between samples so that if there is a
     # missing mod 4 time, we can still get the other pieces of data.
     t0 = all_four_0[0]
-    max_time = acq_data['CVCDUCTR'].times[-1]
-    dtime = np.median(acq_data['CVCDUCTR'].times[1:] - acq_data['CVCDUCTR'].times[:-1])
+    max_time = acq_data['CVCDUCTR']["times"][-1]
+    dtime = np.median(acq_data['CVCDUCTR']["times"][1:] - acq_data['CVCDUCTR']["times"][:-1])
     times = np.arange(t0, max_time + dtime, dtime * 4)[:-1]
     # I explicitly used times (always increasing) and not the VCDU counters,
     # so that I would not need to explicitly handle VCDU rollovers.
@@ -237,24 +290,24 @@ def get_acq_table(obsid_or_date):
         # initialize the column with masked values length of the grid_times
         acq_data_masked[col] = np.ma.masked_all(
             len(times),
-            dtype=acq_data[col].vals.dtype)
+            dtype=acq_data[col]["vals"].dtype)
 
         # COBSRQID isn't ACA data, so just do a straight searchsorted to line up
         # reasonable values with the grid of ACA data.
         if col == 'COBSRQID':
             for idx, time in enumerate(times):
-                data_idx = np.searchsorted(acq_data[col].times, time)
-                if data_idx < len(acq_data[col].times):
-                    acq_data_masked[col][idx] = acq_data[col].vals[data_idx]
+                data_idx = np.searchsorted(acq_data[col]["times"], time)
+                if data_idx < len(acq_data[col]["times"]):
+                    acq_data_masked[col][idx] = acq_data[col]["times"][data_idx]
             continue
 
         # For the other MSIDs, paste them into a grid of ACA times
-        ok = (acq_data[col].times >= times[0]) & (acq_data[col].times <= times[-1])
-        for idx, time in enumerate(acq_data[col].times[ok]):
+        ok = (acq_data[col]["times"] >= times[0]) & (acq_data[col]["times"] <= times[-1])
+        for idx, time in enumerate(acq_data[col]["times"][ok]):
             # Find the ACA grid index for the time
             gidx = np.searchsorted(times, time + (dtime * .9)) - 1
             if gidx < len(times):
-                acq_data_masked[col][gidx] = acq_data[col].vals[idx]
+                acq_data_masked[col][gidx] = acq_data[col]["vals"][idx]
 
     vals = Table([acq_data_masked[col] for col in msids + slot_msids], names=msids + slot_msids)
     vals['time'] = times
@@ -282,8 +335,8 @@ def get_acq_table(obsid_or_date):
     # This is used both to map ACQID to the right slot and
     # to get the star positions to estimate deltas later
     starcheck = mica.starcheck.get_starcheck_catalog_at_date(start_time)
-    if "cat" not in starcheck:
-        raise ValueError("No starcheck catalog found for {}".format(obsid))
+    #if "cat" not in starcheck:
+    #    raise ValueError("No starcheck catalog found for {}".format(obsid))
     catalog = Table(starcheck["cat"])
     catalog.sort("idx")
     # Filter the catalog to be just acquisition stars
