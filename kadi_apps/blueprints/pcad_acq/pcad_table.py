@@ -135,7 +135,6 @@ def get_acq_date_for_obsid(obsid, load_name=None):
         If the obsid is not valid.
 
     """
-    print(f"Getting acquisition date for obsid {obsid} with load {load_name}")
     if load_name.strip() == "":
         return get_time_for_obsid_from_cmds(obsid)
     else:
@@ -152,7 +151,6 @@ def get_time_for_obsid_from_cmds(obsid):
         if obs["source"] == "CMD_EVT" or obs["npnt_enab"] == False:
             continue
         break
-    print(obs)
     return get_closest_npnt_start_time(obs["obs_start"])
 
 
