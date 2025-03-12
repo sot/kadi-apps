@@ -20,6 +20,33 @@ class="with-background"
 
 {% block content %}
 <p><p>
+
+<div class="accordion" id="accordionExample">
+  <div class="accordion-item">
+      <h4 class="accordion-header" id="heading-table">
+          <button class="accordion-button collapsed bg-primary bg-opacity-25" type="button" data-bs-toggle="collapse"
+              data-bs-target="#info-table" aria-expanded="true" aria-controls="info-table">
+              Notes
+          </button>
+      </h4>
+      <div id="info-table" class="accordion-collapse collapse" aria-labelledby="info-table"
+          data-bs-parent="#accordionExample">
+          <div class="accordion-body bg-primary bg-opacity-10">
+              If you submit the form with a "date", the acquisition data for the acquisition closest in time
+              to that date will be displayed.
+
+              If you submit the form with an "obsid" and no load name, the query will return the acquisition data
+              for the acquisition closest in time to the first kadi.commands.observation for that obsid with a load source
+              (source != 'CMD_EVT' and npnt_enab == True).
+
+              If you submit the form with an "obsid" and "load name", the query will return the acquisition data for
+              the acquisition closest in time to the the expected maneuver end time for the planned obsid with the
+              supplied obsid from the specified load name.
+          </div>
+      </div>
+  </div>
+</div>
+
 <h1 align="center"> PCAD Acquisition Table </h1>
 
 
