@@ -23,8 +23,6 @@ import agasc
 from ska_helpers import retry
 import maude
 
-from maude.config import conf as maude_conf
-
 # This app uses only the CXC data source with fetch
 fetch.data_source.set('cxc')
 
@@ -181,12 +179,12 @@ def get_time_for_obsid_from_starcheck(obsid, load_name):
 
 def get_maude_telem(msids, start_time, stop_time):
     # Get the data directly from maude instead of cheta
-    with maude_conf.set_temp("timeout", (2)):
-        telem = retry.retry_call(
-            maude.get_msids,
-            args=[msids],
-            kwargs={'start': start_time, 'stop': stop_time, 'allow_subset': False},
-            tries=4, delay=1)
+
+    telem = retry.retry_call(
+        maude.get_msids,
+        args=[msids],
+        kwargs={'start': start_time, 'stop': stop_time, 'allow_subset': False},
+        tries=4, delay=1)
     # convert this to a dict of just times and vals by msid
     telem_dict = {}
     # telem data is a list of dicts, one per msid
