@@ -20,35 +20,98 @@ class="with-background"
 
 {% block content %}
 <p><p>
+
 <h1 align="center"> PCAD Acquisition Table </h1>
 
-<form action="" method="get">
+{% if not pcad_data %}
+<form action="" method="post">
   &nbsp;
   <div class="form-group row">
-    <div class="col-sm"> </div>
-    <label class="col-1 col-form-label" for="obsid_in">OBSID</label>
-    <div class="col-4">
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="date">Date</label>
+    <div class="col-sm-8">
+      <input type="text" class="form-control" id="date" name="date"
+      {% if obsid != '' %} placeholder="{{date}}"  value="{{date}}" {% endif %}
+      >
+    </div>
+    <div class="col-sm-2"> </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="obsid_in">Obsid</label>
+    <div class="col-sm-8">
       <input type="text" class="form-control" id="obsid_in" name="obsid"
       {% if obsid != '' %} placeholder="{{obsid}}"  value="{{obsid}}" {% endif %}
       >
     </div>
-    <div class="col-sm"> </div>
+    <div class="col-sm-2"> </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-sm-2"> </div>
+    <label class="col-sm-2 col-form-label" for="load_name">Load Name</label>
+    <div class="col-sm-8">
+      <input type="text" class="form-control" id="load_name" name="load_name"
+      {% if load_name != '' %} placeholder="{{load_name}}"  value="{{load_name}}" {% endif %}
+      >
+    </div>
+    <div class="col-sm-2"> </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-sm-2"> </div>
+    <div class="col-sm-8">
+      <button type="submit" class="btn btn-primary">Submit</button>
+    </div>
+    <div class="col-sm-2"> </div>
   </div>
 </form>
 
+<br></br>
+
+<div class="accordion" id="accordionExample">
+  <div class="accordion-item">
+      <h4 class="accordion-header" id="heading-table">
+          <button class="accordion-button collapsed bg-primary bg-opacity-25" type="button" data-bs-toggle="collapse"
+              data-bs-target="#info-table" aria-expanded="true" aria-controls="info-table">
+              Notes
+          </button>
+      </h4>
+      <div id="info-table" class="accordion-collapse collapse" aria-labelledby="info-table"
+          data-bs-parent="#accordionExample">
+          <div class="accordion-body bg-primary bg-opacity-10">
+            <ul>
+              <li>If you submit the form with a "date", the acquisition data for the acquisition closest in time
+                  to that date will be displayed.</li>
+              <li>If you submit the form with an "obsid" and no load name, the query will return the acquisition data
+                  for the acquisition closest in time to the first kadi.commands.observation for that obsid with
+                  (source != 'CMD_EVT' and npnt_enab == True).</li>
+              <li>If you submit the form with an "obsid" and "load name", the query will return the acquisition data for
+                  the acquisition closest in time to the expected maneuver end time for the planned obsid with the
+                  from the specified load name.</li>
+          </ul>
+          </div>
+      </div>
+  </div>
+</div>
+{% endif %}
 &nbsp;
 
-{% if pcad_data %}
+{% macro render_table(data) %}
+{% if data %}
 <TABLE class='table bg-white' border=1>
-{% for slice in pcad_data %}
+{% for slice in data %}
 <tr
 {% if slice.AOACASEQ == 'GUID' %}
 style="background-color: lightgray;"
+{% endif %}
+{% if slice.AOACASEQ == 'BRIT' %}
+style="background-color: orange;"
 {% endif %}
 >
 <td>
 <table class='pcad table' border=1>
 <tr><td>time</td><td>{{ slice.time }}</td></tr>
+<tr><td>date</td><td>{{ slice.date }}</td></tr>
+<tr><td>COBSRQID</td><td>{{ '%5d' % slice.COBSRQID }}</td></tr>
 <tr><td>AOPCADMD</td><td>{{ slice.AOPCADMD }}</td></tr>
 <tr><td>AOACASEQ</td><td>{{ slice.AOACASEQ }}</td></tr>
 <tr><td>AOACHIBK</td><td>{{ slice.AOACHIBK }}</td></tr>
@@ -95,7 +158,7 @@ style="background-color: lightgreen;"
 {% if slice.AOACASEQ == 'GUID' and slot.AOACFCT == 'TRAK' and slot.POS_ACQID == 'NOID' %}
 style="background-color: yellow;"
 {% endif %}
-{% if slice.AOACASEQ == 'GUID' and slot.AOACFCT == 'TRAK' and slot.POS_ACQID == 'ID  ' %}
+{% if slice.AOACASEQ == 'GUID' and slot.AOACFCT == 'TRAK' and slot.POS_ACQID == 'ID' %}
 style="background-color: lightgreen;"
 {% endif %}
 {% if slice.AOACASEQ == 'AQXN' and slot.AOACFCT == 'SRCH' %}
@@ -153,8 +216,22 @@ bgcolor='red'
 {% endfor %}
 </tr>
 {% endfor %}
-<TABLE>
-<BODY>
+</TABLE>
+
+{% endif %}
+{% endmacro %}
+
+{% if acq_rows %}
+<h3>First GUID row with Acquisition Status</h3>
+{{ render_table(acq_rows) }}
+{% endif %}
+
+<br></br>
+
+{% if pcad_data %}
+<h3>Full Acquisition Data</h3>
+{{ render_table(pcad_data) }}
 {% endif %}
 
 {% endblock %}
+</BODY>
