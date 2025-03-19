@@ -11,6 +11,7 @@ blueprint = Blueprint('pcad_acq_blueprint', __name__, template_folder='templates
 
 @blueprint.route("/", methods=["POST", "GET"])
 def pcad_acq():
+    acq_date = None
     obsid = ''
     load_name = ''
     pcad_data = ''
@@ -30,7 +31,8 @@ def pcad_acq():
     elif date.strip() is not '':
         acq_date = get_closest_npnt_start_time(date)
 
-    pcad_data = get_acq_table(acq_date)
+    if acq_date is not None:
+        pcad_data = get_acq_table(acq_date)
 
 
     # If there is a GUIDE row, render that separately
