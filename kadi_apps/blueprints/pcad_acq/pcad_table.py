@@ -227,6 +227,8 @@ def get_acq_table(start_time):
 
     # Just use a reference MSID to figure out if CXC telem covers this enough
     _, vcdu_msid_stop = fetch.get_time_range("CVCDUCTR")
+
+    # Check if the cxc stop time is 5 minutes past the max acq stop time
     if vcdu_msid_stop < (stop_time + 60 * 5):
         acq_data = get_maude_telem(msids + slot_msids, start_time, stop_time)
     else:
