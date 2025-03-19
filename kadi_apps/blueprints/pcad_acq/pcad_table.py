@@ -26,6 +26,10 @@ import maude
 # This app uses only the CXC data source with fetch
 fetch.data_source.set('cxc')
 
+# Let's just use the flight scenario when working from this kadi app
+os.environ["KADI_SCENARIO"] = "flight"
+
+
 msids = [
     "CVCDUCTR",
     "COBSRQID",
