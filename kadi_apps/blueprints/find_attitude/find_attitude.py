@@ -18,6 +18,7 @@ from flask import Blueprint, request
 from kadi import __version__
 from maude import get_msids
 from Quaternion import Quat, normalize
+from ska_helpers.utils import convert_to_int_float_str
 
 from kadi_apps.rendering import render_template
 
@@ -130,13 +131,8 @@ def index():
     # Update some constraints to their default values if not set.
     for key, value in DEFAULT_CONSTRAINTS.items():
         form_val = request.form.get(key)
-        if form_val is not None and form_val.strip() == "":
-            if key == 'maude_channel':
-                value = form_val
-                context[key] = value
-            else:
-                value = float(form_val)
-                context[key] = value
+        if form_val is not None and form_val.strip() != "":
+            context[key] = convert_to_int_float_str(form_val)
         if key not in context:
             context[key] = value
 
