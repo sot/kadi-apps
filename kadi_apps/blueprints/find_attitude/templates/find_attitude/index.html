@@ -45,7 +45,10 @@ class="with-background"
     </div>
     <div class="col">
       <label for="maude_channel">MAUDE channel</label>
-      <input type="text" class="form-control" id="maude_channel" name="maude_channel" value="{{maude_channel}}">
+      <select class="form-control" id="maude_channel" name="maude_channel">
+      <option value="FLIGHT" {% if maude_channel == "FLIGHT" %}selected{% endif %}>FLIGHT</option>
+      <option value="ASVT" {% if maude_channel == "ASVT" %}selected{% endif %}>ASVT</option>
+      </select>
     </div>
   </div>
   </div>
