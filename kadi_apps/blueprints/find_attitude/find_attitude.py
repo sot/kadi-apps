@@ -128,13 +128,14 @@ def index():
     context['generation_time'] = generation_time
     context['kadi_version'] = __version__
 
-    # Update some constraints to their default values if not set.
-    for key, value in DEFAULT_CONSTRAINTS.items():
+    # Update some constraints to their default values
+    context.update(DEFAULT_CONSTRAINTS)
+
+    # But override with any values from the form
+    for key in DEFAULT_CONSTRAINTS:
         form_val = request.form.get(key)
-        if form_val is not None and form_val.strip() != "":
-            context[key] = convert_to_int_float_str(form_val)
-        if key not in context:
-            context[key] = value
+        context[key] = convert_to_int_float_str(form_val)
+
 
     if context.get('solutions'):
         context['subtitle'] = ': Solution'
