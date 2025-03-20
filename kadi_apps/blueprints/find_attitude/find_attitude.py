@@ -134,7 +134,8 @@ def index():
     # But override with any values from the form
     for key in DEFAULT_CONSTRAINTS:
         form_val = request.form.get(key)
-        context[key] = convert_to_int_float_str(form_val)
+        if form_val is not None:
+            context[key] = convert_to_int_float_str(form_val)
 
 
     if context.get('solutions'):
