@@ -18,10 +18,12 @@ from flask import Blueprint, request
 from kadi import __version__
 from maude import get_msids
 from Quaternion import Quat, normalize
+from ska_helpers.utils import convert_to_int_float_str
 
 from kadi_apps.rendering import render_template
 
 DEFAULT_CONSTRAINTS = {'distance_tolerance': 3.0,
+                       'maude_channel': 'FLIGHT',
             'pitch_err': 1.5,
             'att_err': 4.0,
             'mag_err': 1.5,
@@ -46,8 +48,7 @@ blueprint = Blueprint(
 )
 
 
-def get_telem_from_maude(date=None):
-
+def get_telem_from_maude(date=None, channel="FLIGHT"):
     msids = []
     for msid_root in ["aoacfct", "aoacfid", "aoacyan", "aoaczan", "aoacmag"]:
         msids.extend([f"{msid_root}{ii}" for ii in range(8)])
@@ -61,7 +62,7 @@ def get_telem_from_maude(date=None):
         kwargs = {'start': start, 'stop': stop}
     else:
         kwargs = {}
-    dat = get_msids(msids, **kwargs)
+    dat = get_msids(msids, **kwargs, channel=channel)
     results = dat["data"]
     out = {}
     for result in results:
@@ -127,14 +128,15 @@ def index():
     context['generation_time'] = generation_time
     context['kadi_version'] = __version__
 
-    # Update some constraints to their default values if not set.
-    for key, value in DEFAULT_CONSTRAINTS.items():
+    # Update some constraints to their default values
+    context.update(DEFAULT_CONSTRAINTS)
+
+    # But override with any values from the form
+    for key in DEFAULT_CONSTRAINTS:
         form_val = request.form.get(key)
-        if form_val is not None and form_val.strip() != "":
-            value = float(form_val)
-            context[key] = value
-        if key not in context:
-            context[key] = value
+        if form_val is not None:
+            context[key] = convert_to_int_float_str(form_val)
+
 
     if context.get('solutions'):
         context['subtitle'] = ': Solution'
@@ -179,11 +181,13 @@ def find_solutions_and_get_context(action):
     stars_text = request.form.get('stars_text', '')
     context = {}
     att_est = None
+    maude_channel = request.form.get('maude_channel', 'FLIGHT')
+    context["maude_channel"] = maude_channel
     if stars_text.strip() == '' or action == 'gettelem':
         # Get date for solution, defaulting to NOW for any blank input
         date_solution = request.form.get('date_solution', '').strip() or None
         try:
-            date, stars, att_est = get_telem_from_maude(date_solution)
+            date, stars, att_est = get_telem_from_maude(date_solution, channel=maude_channel)
         except Exception as err:
             context['error_message'] = (f"{err}\n",
                                         f"Could not fetch telemetry at date={date_solution}.")
@@ -239,7 +243,7 @@ def find_solutions_and_get_context(action):
         return context
 
     # Try to find solutions
-    tolerance = float(request.form.get('distance_tolerance', '2.5'))
+    tolerance = float(request.form.get('distance_tolerance', '3.0'))
 
     # Keep any constraints in the form for next submission
     for constraint in POSSIBLE_CONSTRAINTS:
