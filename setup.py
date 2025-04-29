@@ -8,6 +8,14 @@ except ImportError:
     cmdclass = {}
 
 
+entry_points = {
+    "console_scripts": [
+        "kadi-apps-test-server=kadi_apps.app:main",
+        "kadi-apps=kadi_apps.scripts.kadi_apps_cmd:main",
+    ]
+}
+
+
 def static_files():
     """
     Find all "static" directories, list their contents and match them to their
@@ -33,6 +41,8 @@ setup(
     packages=[
         'kadi_apps',
         'kadi_apps.settings',
+        'kadi_apps.scripts',
+        'kadi_apps.scripts.kadi_apps_cmd',
         'kadi_apps.tests',
         'kadi_apps.blueprints',
         'kadi_apps.blueprints.ska_api',
@@ -52,7 +62,9 @@ setup(
     zip_safe=False,
     # tests_require=['pytest'],
     package_data={
-        'kadi_apps': ['templates/*.html', 'static/images/*'],
+        'kadi_apps': ['environment.yml', 'templates/*.html', 'static/images/*'],
+        'kadi_apps.scripts.kadi_apps_cmd': ['supervisord.conf', 'environment.yml'],
+        'kadi_apps.tests': ['**/*'],
         'kadi_apps.blueprints.ska_api': ['templates/*.html'],
         'kadi_apps.blueprints.find_attitude': ['templates/find_attitude/*.html'],
         'kadi_apps.blueprints.kadi': ['templates/events/*.html'],
@@ -61,5 +73,6 @@ setup(
         'kadi_apps.blueprints.star_hist': ['templates/star_hist/*.html'],
     },
     data_files=static_files(),
+    entry_points=entry_points,
     cmdclass=cmdclass,
 )
