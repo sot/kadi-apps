@@ -42,7 +42,7 @@ def api_index():
 def get_app(name=__name__, settings='devel'):
     import kadi_apps
     from kadi_apps.blueprints import auth, test, ska_api as api, kadi, find_attitude
-    from kadi_apps.blueprints import mica, star_hist, pcad_acq, astromon
+    from kadi_apps.blueprints import mica, star_hist, pcad_acq, astromon, agasc_gaia
 
     logger = pyyaks.logger.get_logger(name='kadi_apps', level='INFO')
     msg = f'Starting Kadi Apps version {kadi_apps.__version__}'
@@ -81,6 +81,7 @@ def get_app(name=__name__, settings='devel'):
     app.register_blueprint(mica.blueprint, url_prefix='/mica')
     app.register_blueprint(star_hist.blueprint, url_prefix='/star_hist')
     app.register_blueprint(pcad_acq.blueprint, url_prefix='/pcad_acq')
+    app.register_blueprint(agasc_gaia.blueprint, url_prefix='/agasc_gaia')
 
     app.register_blueprint(auth.blueprint, url_prefix='/api/auth')
     app.register_blueprint(test.blueprint, url_prefix='/api/test')
