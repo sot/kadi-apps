@@ -1,0 +1,2 @@
+# Playwright artifacts (screenshots / traces / videos for failed tests)
+test-results/
