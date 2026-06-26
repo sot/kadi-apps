@@ -1,0 +1,7 @@
+# Dependencies for the kadi-apps functional (Playwright) test suite.
+#
+# Install with:
+#     pip install -r functional_tests/requirements.txt
+#     playwright install chromium
+pytest>=7.0
+pytest-playwright>=0.4
