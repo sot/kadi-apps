@@ -45,10 +45,15 @@ class="with-background"
     </div>
     <div class="col">
       <label for="maude_channel">MAUDE channel</label>
-      <select class="form-control" id="maude_channel" name="maude_channel">
+      <select class="form-control" id="maude_channel" name="maude_channel" onchange="toggleAsvtWarning(this.value)">
       <option value="FLIGHT" {% if maude_channel == "FLIGHT" %}selected{% endif %}>FLIGHT</option>
       <option value="ASVT" {% if maude_channel == "ASVT" %}selected{% endif %}>ASVT</option>
       </select>
+    </div>
+  </div>
+  <div class="row" id="asvt_warning" style="display: {% if maude_channel == 'ASVT' %}block{% else %}none{% endif %};">
+    <div class="col">
+      <p style="color: darkred; font-weight: bold;">When using ASVT maude channel for a SIM, after fetching telemetry remember to update solution date to simulation time for accurate pitch constraint handling.</p>
     </div>
   </div>
   </div>
@@ -216,5 +221,11 @@ slot yag zag mag
 7     573.25   -2411.70      7.1
 </pre>
 {% endif %}
+
+<script>
+function toggleAsvtWarning(channel) {
+  document.getElementById('asvt_warning').style.display = channel === 'ASVT' ? 'block' : 'none';
+}
+</script>
 
 {% endblock %}
