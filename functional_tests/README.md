@@ -45,6 +45,28 @@ depend on an external service, so they are skipped unless you opt in:
 pytest functional_tests -m telemetry --run-telemetry --server test
 ```
 
+### Test-vs-flight diff report
+
+The `diff` tests replace the manual "open both servers and flip between tabs"
+comparison: every page and Find Attitude scenario the suite exercises is rendered
+on **both** the test and flight servers and compared (visible text + full-page
+screenshots, with the always-different version footer masked). They are
+**report-only** — differences do not fail the tests, since right before a
+promotion a difference is often the point. A test only fails if a server errors.
+
+```bash
+pytest functional_tests -m diff --run-diff
+
+# Include the (slow) telemetry scenarios in the comparison
+pytest functional_tests -m diff --run-diff --run-telemetry
+```
+
+Then open `functional_tests/diff-results/index.html`: it shows both servers'
+versions, flags which pages differ, and links to a per-page detail view with a
+side-by-side highlighted text diff, a pixel-diff image, and a blink toggle
+between the two screenshots. `--server`/`--base-url` are ignored by these tests;
+they always compare the two servers in `conftest.SERVERS`.
+
 ### Debugging failures
 
 On failure, a screenshot, Playwright trace, and video are written under
@@ -67,5 +89,7 @@ pytest functional_tests -k find_attitude --headed --slowmo 500
 | `test_smoke.py` | Page/link checks for events, mica, pcad_acq, star_hist, /version, /api, find_attitude, and the version footer |
 | `test_find_attitude.py` | Pasted-catalog solution (deterministic) + telemetry/constraint cases |
 | `test_navigation.py` | Event-list filter → sort → paginate → open event → step → return |
-| `conftest.py` | `--server` / `--base-url` resolution, `--run-telemetry` gating, markers |
-| `helpers.py` | Output parsing + tolerant float/quaternion comparisons |
+| `test_diff.py` | Test-vs-flight comparison of all pages/scenarios (report-only) |
+| `conftest.py` | `--server` / `--base-url` resolution, `--run-telemetry` / `--run-diff` gating, markers |
+| `helpers.py` | Find Attitude form drivers, output parsing + tolerant float/quaternion comparisons |
+| `diffing.py` | Snapshot capture, text/pixel diffing, HTML report writer |

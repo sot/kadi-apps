@@ -1,43 +1,32 @@
-"""Groups 2 & 3: the Find Attitude tool.
+"""Find Attitude tests.
 
-Group 2 (``test_pasted_catalog``) is deterministic and needs no telemetry.
-Group 3 tests are marked ``telemetry`` (gated by ``--run-telemetry``): they fetch
-ACA star data from MAUDE via the server at fixed historical dates, so the
+Test ``test_pasted_catalog`` is deterministic and needs no telemetry.
+
+Tests that require telemetry are marked ``telemetry`` and run only with the ``--run-telemetry`` flag
+they fetch ACA star data from MAUDE via the server at fixed historical dates, so the
 solutions are reproducible.
+
+The form-driving sequences live in ``helpers.py`` as ``run_*`` scenario
+generators (shared with ``test_diff.py``); each ``next()`` advances to the next
+rendered stage and this module asserts the expected values.
 
 Expected values come from https://github.com/sot/web-kadi/wiki/Functional-Tests
 """
 
 import pytest
-from playwright.sync_api import expect
-
 from helpers import (
-    STAR_CATALOG,
     assert_close,
     assert_quat_close,
-    filter_star_rows,
     parse_solutions,
     quats_match,
+    run_get_telem_current,
+    run_multiple_solutions,
+    run_pasted_catalog,
+    run_safe_mode_constraints,
 )
+from playwright.sync_api import expect
 
 pytestmark = pytest.mark.find_attitude
-
-# Solving (and the server-side MAUDE fetch) can take a while.
-SOLVE_TIMEOUT = 120_000
-
-# Buttons (all share name="action").
-GET_TELEM = "button[name=action][value=gettelem]"
-SOLVE = "button[name=action][value=calc_solution]"
-SOLVE_CONSTRAINTS = "button[name=action][value=calc_solution_constraints]"
-
-# The star-data textarea has a name but no id (unlike the other inputs).
-STARS = "textarea[name=stars_text]"
-
-
-def _submit(page, selector):
-    """Click a submit button and wait for the resulting page to render."""
-    with page.expect_navigation(wait_until="load", timeout=SOLVE_TIMEOUT):
-        page.click(selector)
 
 
 def _body(page):
@@ -50,9 +39,8 @@ def _assert_no_error(page):
 
 def test_pasted_catalog(page):
     """Paste the 8-star catalog and solve with no constraints."""
-    page.goto("/find_attitude/")
-    page.fill(STARS, STAR_CATALOG)
-    _submit(page, SOLVE)
+    for _stage in run_pasted_catalog(page):
+        pass
 
     expect(page.get_by_text("Attitude solution generated")).to_be_visible()
     sols = parse_solutions(page)
@@ -82,8 +70,8 @@ def test_pasted_catalog(page):
 @pytest.mark.telemetry
 def test_get_telem_current(page):
     """Fetch current ACA telemetry from MAUDE (the 'Get Telem' sanity step)."""
-    page.goto("/find_attitude/")
-    _submit(page, GET_TELEM)
+    for _stage in run_get_telem_current(page):
+        pass
     _assert_no_error(page)
     # The onboard attitude estimate and pitch are populated regardless of whether
     # any stars are currently tracked.
@@ -94,23 +82,18 @@ def test_get_telem_current(page):
 @pytest.mark.telemetry
 def test_safe_mode_constraints(page):
     """Safe-mode case: no solution without constraints, then 1 solution with them."""
-    page.goto("/find_attitude/")
-    page.fill("#date_solution", "2023:046:00:34:15.230")
-    _submit(page, GET_TELEM)
+    stages = run_safe_mode_constraints(page)
+
+    assert next(stages) == "get_telem"
     _assert_no_error(page)
 
-    stars = filter_star_rows(page.input_value(STARS), {1, 5, 6, 7})
-    page.fill(STARS, stars)
-
     # Without constraints there should be no solution.
-    _submit(page, SOLVE)
+    assert next(stages) == "solve_no_constraints"
     assert "No matching solutions" in _body(page)
     assert parse_solutions(page) == []
 
     # With a sun-pitch constraint and no attitude estimate: 1 solution, 3 stars.
-    page.fill("#att", "")
-    page.fill("#pitch", "90")
-    _submit(page, SOLVE_CONSTRAINTS)
+    assert next(stages) == "solve_pitch_constraint"
     sols = parse_solutions(page)
     assert len(sols) == 1, f"expected 1 solution, got {len(sols)}"
     assert sols[0]["n_matched"] == 3
@@ -121,8 +104,7 @@ def test_safe_mode_constraints(page):
     )
 
     # Loosening distance tolerance to 4 should match a 4th star (403964656).
-    page.fill("#distance_tolerance", "4")
-    _submit(page, SOLVE_CONSTRAINTS)
+    assert next(stages) == "solve_distance_tolerance_4"
     sols = parse_solutions(page)
     assert len(sols) == 1, f"expected 1 solution, got {len(sols)}"
     assert sols[0]["n_matched"] == 4
@@ -132,18 +114,12 @@ def test_safe_mode_constraints(page):
 @pytest.mark.telemetry
 def test_multiple_solutions(page):
     """Confirm the app can return multiple solutions."""
-    page.goto("/find_attitude/")
-    page.fill("#date_solution", "2025:041:13:48:45.286")
-    _submit(page, GET_TELEM)
+    stages = run_multiple_solutions(page)
+
+    assert next(stages) == "get_telem"
     _assert_no_error(page)
 
-    page.fill(STARS, filter_star_rows(page.input_value(STARS), {3, 4}))
-    page.fill("#pitch", "")  # remove Sun Pitch
-    page.fill("#att_err", "1.0")
-    page.fill("#off_nom_roll_max", "20")
-    page.fill("#min_stars", "2")
-    _submit(page, SOLVE_CONSTRAINTS)
-
+    assert next(stages) == "solve_constraints"
     sols = parse_solutions(page)
     assert len(sols) == 3, f"expected 3 solutions, got {len(sols)}"
     actual = [s["quat"] for s in sols]

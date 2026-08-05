@@ -1,10 +1,16 @@
-"""Helpers for parsing and asserting on Find Attitude output.
+"""Helpers for driving the Find Attitude form and parsing its output.
 
 The Find Attitude page renders, for each solution, a ``Solution Quaternion``
 strong block, an ``RA=/Dec=/Roll=`` block, and a ``<pre>`` star-match summary
 table (astropy pformat) whose last column is ``m_agasc_id`` and whose unmatched
 rows show ``--``.  See
 kadi_apps/blueprints/find_attitude/templates/find_attitude/index.html
+
+The ``run_*`` scenario drivers are shared between ``test_find_attitude.py``
+(which asserts expected values at each stage) and ``test_diff.py`` (which runs
+the same scenario on the test and flight servers and diffs the rendered pages).
+Each driver is a generator that yields a stage name after every form submit,
+with the page showing that stage's rendered result.
 """
 
 import re
@@ -23,6 +29,24 @@ slot yag zag mag
 6   -3276.80   -3276.80     13.9
 7     573.25   -2411.70      7.1
 """
+
+# Solving (and the server-side MAUDE fetch) can take a while.
+SOLVE_TIMEOUT = 120_000
+
+# Buttons (all share name="action").
+GET_TELEM = "button[name=action][value=gettelem]"
+SOLVE = "button[name=action][value=calc_solution]"
+SOLVE_CONSTRAINTS = "button[name=action][value=calc_solution_constraints]"
+
+# The star-data textarea has a name but no id (unlike the other inputs).
+STARS = "textarea[name=stars_text]"
+
+
+def submit(page, selector):
+    """Click a submit button and wait for the resulting page to render."""
+    with page.expect_navigation(wait_until="load", timeout=SOLVE_TIMEOUT):
+        page.click(selector)
+
 
 _QUAT_RE = re.compile(r"Solution Quaternion:\s*\[([^\]]+)\]")
 _RADECROLL_RE = re.compile(r"RA=\s*([-\d.]+)\s+Dec=\s*([-\d.]+)\s+Roll=\s*([-\d.]+)")
@@ -130,3 +154,63 @@ def filter_star_rows(stars_text, keep_slots):
                 # preserve a single trailing structure; skip blank noise
                 continue
     return "\n".join(out) + "\n"
+
+
+# ---------------------------------------------------------------------------
+# Scenario drivers (generators yielding a stage name after each submit).
+# ---------------------------------------------------------------------------
+
+
+def run_pasted_catalog(page):
+    """Paste the 8-star catalog and solve with no constraints."""
+    page.goto("/find_attitude/")
+    page.fill(STARS, STAR_CATALOG)
+    submit(page, SOLVE)
+    yield "solve"
+
+
+def run_get_telem_current(page):
+    """Fetch current ACA telemetry from MAUDE (the 'Get Telem' sanity step)."""
+    page.goto("/find_attitude/")
+    submit(page, GET_TELEM)
+    yield "get_telem"
+
+
+def run_safe_mode_constraints(page):
+    """Safe-mode case at a fixed date: solve without and then with constraints."""
+    page.goto("/find_attitude/")
+    page.fill("#date_solution", "2023:046:00:34:15.230")
+    submit(page, GET_TELEM)
+    yield "get_telem"
+
+    # Keep only slots 1, 5, 6, 7 and solve without constraints.
+    page.fill(STARS, filter_star_rows(page.input_value(STARS), {1, 5, 6, 7}))
+    submit(page, SOLVE)
+    yield "solve_no_constraints"
+
+    # Sun-pitch constraint and no attitude estimate.
+    page.fill("#att", "")
+    page.fill("#pitch", "90")
+    submit(page, SOLVE_CONSTRAINTS)
+    yield "solve_pitch_constraint"
+
+    # Loosen the distance tolerance to 4.
+    page.fill("#distance_tolerance", "4")
+    submit(page, SOLVE_CONSTRAINTS)
+    yield "solve_distance_tolerance_4"
+
+
+def run_multiple_solutions(page):
+    """Two-star case at a fixed date that yields multiple solutions."""
+    page.goto("/find_attitude/")
+    page.fill("#date_solution", "2025:041:13:48:45.286")
+    submit(page, GET_TELEM)
+    yield "get_telem"
+
+    page.fill(STARS, filter_star_rows(page.input_value(STARS), {3, 4}))
+    page.fill("#pitch", "")  # remove Sun Pitch
+    page.fill("#att_err", "1.0")
+    page.fill("#off_nom_roll_max", "20")
+    page.fill("#min_stars", "2")
+    submit(page, SOLVE_CONSTRAINTS)
+    yield "solve_constraints"

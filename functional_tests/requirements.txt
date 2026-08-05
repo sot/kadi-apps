@@ -5,3 +5,5 @@
 #     playwright install chromium
 pytest>=7.0
 pytest-playwright>=0.4
+# Screenshot pixel-diffing for the test-vs-flight diff report (test_diff.py).
+pillow>=9.0
