@@ -1,19 +1,18 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
-import os
-from io import StringIO
 import datetime
-import pytz
-from logging import CRITICAL
+import os
 import pprint
+from io import StringIO
+from logging import CRITICAL
 
 import astropy.units as u
 import find_attitude
 import numpy as np
+import pytz
 import ska_sun
 from astropy.table import Table
 from cxotime import CxoTime
-from find_attitude.find_attitude import (find_attitude_solutions,
-                                         get_stars_from_text, logger)
+from find_attitude.find_attitude import find_attitude_solutions, get_stars_from_text, logger
 from flask import Blueprint, request
 from kadi import __version__
 from maude import get_msids
