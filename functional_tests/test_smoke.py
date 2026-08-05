@@ -1,4 +1,4 @@
-"""Group 1: page-load / link checks from the wiki functional-test checklist.
+"""page-load / link checks from the wiki functional-test checklist.
 
 For each page we assert the HTTP response is OK, the expected heading/content is
 visible, and the error templates (404/500) are not present. List pages must show

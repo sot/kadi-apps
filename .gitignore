@@ -1,6 +1,7 @@
 __pycache__
 /build/
 /functional_tests/test-results/
+/functional_tests/diff-results/
 /.eggs
 /record.txt
 /*.egg-info

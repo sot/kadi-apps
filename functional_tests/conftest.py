@@ -41,6 +41,13 @@ def pytest_addoption(parser):
         default=False,
         help="Also run tests marked 'telemetry', which fetch live MAUDE data via the server.",
     )
+    group.addoption(
+        "--run-diff",
+        action="store_true",
+        default=False,
+        help="Also run tests marked 'diff', which compare the test and flight servers "
+        "and write an HTML report to functional_tests/diff-results/.",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -57,9 +64,18 @@ def base_url(request):
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-telemetry"):
-        return
-    skip = pytest.mark.skip(reason="needs --run-telemetry (fetches live MAUDE telemetry)")
+    skip_telemetry = not config.getoption("--run-telemetry")
+    skip_diff = not config.getoption("--run-diff")
     for item in items:
-        if "telemetry" in item.keywords:
-            item.add_marker(skip)
+        if skip_telemetry and "telemetry" in item.keywords:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason="needs --run-telemetry (fetches live MAUDE telemetry)"
+                )
+            )
+        if skip_diff and "diff" in item.keywords:
+            item.add_marker(
+                pytest.mark.skip(
+                    reason="needs --run-diff (compares the test and flight servers)"
+                )
+            )
