@@ -1,5 +1,6 @@
 __pycache__
 /build/
+/functional_tests/test-results/
 /.eggs
 /record.txt
 /*.egg-info
