@@ -1,0 +1,9 @@
+# Dependencies for the kadi-apps functional (Playwright) test suite.
+#
+# Install with:
+#     pip install -r functional_tests/requirements.txt
+#     playwright install chromium
+pytest>=7.0
+pytest-playwright>=0.4
+# Screenshot pixel-diffing for the test-vs-flight diff report (test_diff.py).
+pillow>=9.0
