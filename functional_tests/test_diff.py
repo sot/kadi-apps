@@ -20,6 +20,7 @@ from pathlib import Path
 import pytest
 from conftest import SERVERS
 from diffing import DiffReport, capture
+from playwright.sync_api import Error as PlaywrightError
 from helpers import (
     run_get_telem_current,
     run_multiple_solutions,
@@ -43,7 +44,12 @@ EXTRA_PAGES = [("api", "/api")]
 @pytest.fixture(scope="session")
 def diff_report():
     """Collects comparisons across all diff tests; renders the report last."""
-    report = DiffReport(DIFF_DIR)
+    # Pages like /api show the server's own URL in example links; diffs that a
+    # test-host -> flight-host rewrite fully explains are flagged "expected".
+    hosts = {name: url.removeprefix("https://") for name, url in SERVERS.items()}
+    report = DiffReport(
+        DIFF_DIR, expected_replacements=[(hosts["test"], hosts["flight"])]
+    )
     yield report
     if report.entries:
         path = report.finalize()
@@ -68,15 +74,27 @@ def servers(browser, diff_report):
         context.close()
 
 
-def _goto_and_capture(pages, path):
+def _goto_and_capture(pages, diff_report, item_id, path):
+    """Load ``path`` on both servers; a server error is recorded in the
+    report (red "test/flight/both failed" on the index) and fails the test."""
     snaps = {}
+    errors = []
     for name, page in pages.items():
-        response = page.goto(path)
-        assert response is not None and response.ok, (
-            f"{name}: {path} returned HTTP "
-            f"{response.status if response else 'no response'}"
-        )
-        snaps[name] = capture(page)
+        try:
+            response = page.goto(path)
+        except PlaywrightError as exc:
+            errors.append(f"{name}: {exc.__class__.__name__}: {exc}")
+            continue
+        if response is None or not response.ok:
+            errors.append(
+                f"{name}: HTTP {response.status if response else 'no response'}"
+            )
+        else:
+            snaps[name] = capture(page)
+    if errors:
+        failed = "both" if len(errors) == len(pages) else errors[0].split(":")[0]
+        diff_report.add_failure(item_id, failed)
+        pytest.fail(f"{path}: " + "; ".join(errors))
     return snaps
 
 
@@ -98,7 +116,7 @@ def _diff_scenario(pages, diff_report, scenario, prefix):
     ids=[i for i, _, _ in PAGES] + [i for i, _ in EXTRA_PAGES],
 )
 def test_page_diff(servers, diff_report, item_id, path):
-    snaps = _goto_and_capture(servers, path)
+    snaps = _goto_and_capture(servers, diff_report, item_id, path)
     diff_report.add(item_id, test_snap=snaps["test"], flight_snap=snaps["flight"])
 
 

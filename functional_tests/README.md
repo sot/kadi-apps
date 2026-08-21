@@ -52,7 +52,9 @@ comparison: every page and Find Attitude scenario the suite exercises is rendere
 on **both** the test and flight servers and compared (visible text + full-page
 screenshots, with the always-different version footer masked). They are
 **report-only** — differences do not fail the tests, since right before a
-promotion a difference is often the point. A test only fails if a server errors.
+promotion a difference is often the point. A test only fails if a server errors;
+such pages still appear on the report index, flagged red "test failed" /
+"flight failed" / "both failed".
 
 ```bash
 pytest functional_tests -m diff --run-diff
@@ -61,11 +63,16 @@ pytest functional_tests -m diff --run-diff
 pytest functional_tests -m diff --run-diff --run-telemetry
 ```
 
-Then open `functional_tests/diff-results/index.html`: it shows both servers'
-versions, flags which pages differ, and links to a per-page detail view with a
-side-by-side highlighted text diff, a pixel-diff image, and a blink toggle
-between the two screenshots. `--server`/`--base-url` are ignored by these tests;
-they always compare the two servers in `conftest.SERVERS`.
+Then open `functional_tests/diff-results/index.html` (Bootstrap from a CDN, so
+viewing needs internet access): it shows both servers' versions as a blink
+comparison (flight / test / toggle), flags which pages differ, and links to a
+per-page detail view with prev/next navigation and tabs: a blink comparison of
+the two screenshots (auto-toggling by default), a side-by-side highlighted text
+diff, a pixel-diff image, and the screenshots side by side. Differences fully
+explained by each server naming its own URL (e.g. the `/api` examples) are
+flagged blue "expected diff" instead of red "differs". `--server`/`--base-url`
+are ignored by these tests; they always compare the two servers in
+`conftest.SERVERS`.
 
 ### Debugging failures
 
