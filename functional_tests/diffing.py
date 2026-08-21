@@ -3,10 +3,14 @@
 ``capture`` snapshots a rendered page (visible text + full-page screenshot)
 with the version footer masked, since the deployed versions always differ
 between servers. ``DiffReport`` collects one entry per compared page/stage and
-writes a static HTML report to ``diff-results/``: an index flagging which
-entries differ, and a detail page per entry with a side-by-side text diff, a
-pixel-diff image, and a blink toggle between the two screenshots (the manual
-"flip between browser tabs" check, automated).
+writes a static HTML report to ``diff-results/`` (Bootstrap via CDN, styled
+after the periscope drift trending pages): an index flagging which entries
+differ, and a detail page per entry with prev/next navigation and tabs holding
+a blink comparison of the two screenshots (the manual "flip between browser
+tabs" check, automated), a side-by-side text diff, a pixel-diff image, and the
+screenshots side by side. Differences fully explained by known URL
+substitutions (each server naming itself) are flagged "expected diff" instead
+of "differs".
 """
 
 import difflib
@@ -148,15 +152,25 @@ def _slug(item_id):
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", item_id)
 
 
+# Same Bootstrap 5.1.3 CDN build as the periscope drift trending pages, whose
+# look this report follows.
+_BOOTSTRAP_CSS = (
+    "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css'"
+    " rel='stylesheet'"
+    " integrity='sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3'"
+    " crossorigin='anonymous'>"
+)
+_BOOTSTRAP_JS = (
+    "<script src='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js'"
+    " integrity='sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p'"
+    " crossorigin='anonymous'></script>"
+)
+
 _CSS = """
-body { font-family: sans-serif; margin: 1.5em; color: #222; }
-h1 { font-size: 1.4em; } h2 { font-size: 1.1em; margin-top: 1.5em; }
-table.index { border-collapse: collapse; }
-table.index td, table.index th { border: 1px solid #ccc; padding: 0.3em 0.8em; text-align: left; }
-.status-identical { color: #2a7a2a; }
-.status-differs { color: #b03030; font-weight: bold; }
+h1 { color: #990000; font-size: 1.6em; margin-top: 0.8em; }
+h2 { color: #990000; font-size: 1.2em; margin-top: 1.2em; }
 pre.versions { background: #f4f4f4; padding: 0.6em; display: inline-block;
-               vertical-align: top; margin-right: 2em; }
+               max-width: 100%; overflow-x: auto; }
 /* difflib.HtmlDiff table classes */
 table.diff { font-family: monospace; font-size: 0.85em; border: 1px solid #ccc; }
 table.diff td { padding: 0 0.3em; vertical-align: top; white-space: pre-wrap; }
@@ -166,26 +180,56 @@ td.diff_header { text-align: right; }
 .diff_add { background-color: #aaffaa; }
 .diff_chg { background-color: #ffff77; }
 .diff_sub { background-color: #ffaaaa; }
-.shots img { max-width: 45%; border: 1px solid #ccc; vertical-align: top; }
-.shots .full { max-width: 92%; }
 .blink { margin: 1em 0; }
-.blink img { max-width: 92%; border: 2px solid #444; }
+.blink img { border: 2px solid #444; }
 """
 
+# Three-state comparison of two content blocks (screenshots on detail pages,
+# /version outputs on the index): show flight, show test, or auto-toggle
+# between them every 700 ms. One blink component per page (fixed element ids).
 _BLINK_JS = """
-function startBlink() {
-  const img = document.getElementById('blink-img');
-  const label = document.getElementById('blink-label');
-  const srcs = [img.dataset.test, img.dataset.flight];
-  const names = ['test', 'flight'];
-  let i = 0;
-  if (window._blinkTimer) { clearInterval(window._blinkTimer); window._blinkTimer = null;
-                            label.textContent = '(stopped)'; return; }
-  window._blinkTimer = setInterval(() => {
-    i = 1 - i; img.src = srcs[i]; label.textContent = names[i];
+let _blinkTimer = null;
+function _blinkShow(name) {
+  document.getElementById('blink-test').style.display = name === 'test' ? '' : 'none';
+  document.getElementById('blink-flight').style.display = name === 'flight' ? '' : 'none';
+  document.getElementById('blink-label').textContent = name;
+}
+function setBlinkMode(mode) {
+  if (_blinkTimer) { clearInterval(_blinkTimer); _blinkTimer = null; }
+  if (mode !== 'toggle') { _blinkShow(mode); return; }
+  let name = 'test';
+  _blinkShow(name);
+  _blinkTimer = setInterval(() => {
+    name = name === 'test' ? 'flight' : 'test';
+    _blinkShow(name);
   }, 700);
 }
+window.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('blink-test')) setBlinkMode('toggle');
+});
 """
+
+
+def _blink_html(test_html, flight_html):
+    """Blink comparison of two content blocks, with a flight / test / toggle
+    control (toggle, i.e. auto-blinking, is the default)."""
+    buttons = []
+    for mode in ("flight", "test", "toggle"):
+        checked = " checked" if mode == "toggle" else ""
+        buttons.append(
+            f"<input type='radio' class='btn-check' name='blink-mode' "
+            f"id='blink-{mode}-btn' onchange=\"setBlinkMode('{mode}')\"{checked}>"
+            f"<label class='btn btn-outline-secondary btn-sm' "
+            f"for='blink-{mode}-btn'>{mode}</label>"
+        )
+    return (
+        "<div class='blink'>"
+        f"<div class='btn-group' role='group'>{''.join(buttons)}</div> "
+        "showing: <b id='blink-label'>test</b>"
+        f"<div id='blink-test'>{test_html}</div>"
+        f"<div id='blink-flight' style='display:none'>{flight_html}</div>"
+        "</div>"
+    )
 
 
 @dataclass
@@ -194,6 +238,15 @@ class _Entry:
     slug: str
     text_differs: bool
     n_changed_pixels: int
+    # The differences are fully explained by expected_replacements (e.g. the
+    # server's own URL in the /api examples).
+    expected: bool = False
+    # difflib.HtmlDiff table, or None if the texts are identical. Kept here so
+    # detail pages can be written in finalize(), when prev/next are known.
+    table: str = None
+    # "test", "flight", or "both" when the page errored on that server; such
+    # entries have nothing to compare and get no detail page.
+    failed: str = None
 
     @property
     def differs(self):
@@ -205,6 +258,10 @@ class DiffReport:
     """Collects per-page comparison results and renders the HTML report."""
 
     out_dir: Path
+    # (substring, replacement) pairs applied to the test snapshot's text; if
+    # they make it equal to the flight text, the entry's differences are
+    # "expected" (e.g. each server naming its own URL in the /api examples).
+    expected_replacements: list = field(default_factory=list)
     versions: dict = field(default_factory=dict)
     entries: list = field(default_factory=list)
 
@@ -236,16 +293,43 @@ class DiffReport:
         (item_dir / "diff.png").write_bytes(diff_png)
 
         table = text_diff_table(test_snap.text, flight_snap.text)
-        entry = _Entry(
-            item_id=item_id,
-            slug=slug,
-            text_differs=table is not None,
-            n_changed_pixels=n_changed,
+        expected_text = test_snap.text
+        for old, new in self.expected_replacements:
+            expected_text = expected_text.replace(old, new)
+        self.entries.append(
+            _Entry(
+                item_id=item_id,
+                slug=slug,
+                text_differs=table is not None,
+                n_changed_pixels=n_changed,
+                expected=table is not None and expected_text == flight_snap.text,
+                table=table,
+            )
         )
-        self.entries.append(entry)
-        (item_dir / "index.html").write_text(self._detail_html(entry, table))
+
+    def add_failure(self, item_id, failed):
+        """Record a page that errored on one or both servers ("test",
+        "flight", or "both"); it appears on the index but has no detail
+        page."""
+        self.entries.append(
+            _Entry(
+                item_id=item_id,
+                slug=_slug(item_id),
+                text_differs=False,
+                n_changed_pixels=0,
+                failed=failed,
+            )
+        )
 
     def finalize(self):
+        # Detail pages are written here, not in add(), so each one can link to
+        # its prev/next neighbor. Failed entries have no detail page.
+        entries = [e for e in self.entries if not e.failed]
+        for prev, entry, nxt in zip(
+            [None] + entries[:-1], entries, entries[1:] + [None]
+        ):
+            item_dir = self.out_dir / "items" / entry.slug
+            (item_dir / "index.html").write_text(self._detail_html(entry, prev, nxt))
         self.index_path.write_text(self._index_html())
         return self.index_path
 
@@ -253,34 +337,54 @@ class DiffReport:
 
     def _page(self, title, body):
         return (
-            f"<!doctype html><html><head><meta charset='utf-8'>"
-            f"<title>{html.escape(title)}</title><style>{_CSS}</style></head>"
-            f"<body><h1>{html.escape(title)}</h1>{body}</body></html>"
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+            f"<title>{html.escape(title)}</title>{_BOOTSTRAP_CSS}"
+            f"<style>{_CSS}</style></head>"
+            f"<body><div class='container-md'><h1>{html.escape(title)}</h1>{body}</div>"
+            f"<script>{_BLINK_JS}</script>{_BOOTSTRAP_JS}</body></html>"
         )
 
     def _index_html(self):
         parts = []
         if self.versions:
             parts.append("<h2>Server versions</h2>")
-            for server, text in self.versions.items():
-                parts.append(
-                    f"<pre class='versions'><b>{html.escape(server)}</b>\n"
-                    f"{html.escape(text)}</pre>"
-                )
-        n_diff = sum(e.differs for e in self.entries)
+            pres = {
+                server: f"<pre class='versions'><b>{html.escape(server)}</b>\n"
+                f"{html.escape(text)}</pre>"
+                for server, text in self.versions.items()
+            }
+            if set(pres) == {"test", "flight"}:
+                parts.append(_blink_html(pres["test"], pres["flight"]))
+            else:
+                parts.extend(pres.values())
+        n_expected = sum(e.differs and e.expected for e in self.entries)
+        n_diff = sum(e.differs and not e.expected for e in self.entries)
+        n_failed = sum(bool(e.failed) for e in self.entries)
+        notes = f", {n_expected} expected" if n_expected else ""
+        notes += f", {n_failed} failed" if n_failed else ""
         parts.append(
-            f"<h2>Compared pages ({n_diff} of {len(self.entries)} differ)</h2>"
+            f"<h2>Compared pages ({n_diff} of {len(self.entries)} differ"
+            f"{notes})</h2>"
         )
         parts.append(
-            "<table class='index'><tr><th>Page</th><th>Text</th>"
+            "<table class='table table-striped w-auto'><tr><th>Page</th><th>Text</th>"
             "<th>Pixels changed</th><th>Status</th></tr>"
         )
         for e in self.entries:
-            status = (
-                "<span class='status-differs'>differs</span>"
-                if e.differs
-                else "<span class='status-identical'>identical</span>"
-            )
+            if e.failed:
+                status = f"<span class='text-danger fw-bold'>{e.failed} failed</span>"
+                parts.append(
+                    f"<tr><td>{html.escape(e.item_id)}</td>"
+                    f"<td>&mdash;</td><td>&mdash;</td><td>{status}</td></tr>"
+                )
+                continue
+            if not e.differs:
+                status = "<span class='text-success'>identical</span>"
+            elif e.expected:
+                status = "<span class='text-primary fw-bold'>expected diff</span>"
+            else:
+                status = "<span class='text-danger fw-bold'>differs</span>"
             text_status = "differs" if e.text_differs else "same"
             parts.append(
                 f"<tr><td><a href='items/{e.slug}/index.html'>"
@@ -291,35 +395,56 @@ class DiffReport:
         parts.append("</table>")
         return self._page("kadi-apps test vs flight diff report", "".join(parts))
 
-    def _detail_html(self, entry, table):
-        parts = ["<p><a href='../../index.html'>&larr; back to index</a></p>"]
+    def _detail_html(self, entry, prev, nxt):
+        nav = []
+        if prev:
+            nav.append(
+                f"&larr; <a href='../{prev.slug}/index.html'>"
+                f"{html.escape(prev.item_id)}</a>"
+            )
+        nav.append("<a href='../../index.html'>index</a>")
+        if nxt:
+            nav.append(
+                f"<a href='../{nxt.slug}/index.html'>"
+                f"{html.escape(nxt.item_id)}</a> &rarr;"
+            )
+        parts = [f"<p>{' | '.join(nav)}</p>"]
 
-        parts.append("<h2>Text diff</h2>")
-        parts.append(table if table else "<p>Rendered text is identical.</p>")
-
-        parts.append("<h2>Blink comparison</h2>")
-        parts.append(
-            "<div class='blink'>"
-            "<button onclick='startBlink()'>start / stop blink</button> "
-            "showing: <b id='blink-label'>test</b><br>"
-            "<img id='blink-img' src='test.png' "
-            "data-test='test.png' data-flight='flight.png'>"
-            "</div>"
-            f"<script>{_BLINK_JS}</script>"
+        blink = _blink_html(
+            "<img class='img-fluid' src='test.png'>",
+            "<img class='img-fluid' src='flight.png'>",
         )
-
-        parts.append(
-            f"<h2>Pixel diff ({entry.n_changed_pixels} pixels changed)</h2>"
-            "<div class='shots'><img class='full' src='diff.png'></div>"
-        )
-
-        parts.append(
-            "<h2>Side by side</h2>"
-            "<div class='shots'>"
-            "<figure style='display:inline-block'><figcaption>test</figcaption>"
-            "<img src='test.png'></figure>"
-            "<figure style='display:inline-block'><figcaption>flight</figcaption>"
-            "<img src='flight.png'></figure>"
+        text_diff = entry.table if entry.table else "<p>Rendered text is identical.</p>"
+        pixels = "<img class='img-fluid border' src='diff.png'>"
+        side_by_side = (
+            "<div class='row'>"
+            "<div class='col-md-6'><figure><figcaption>test</figcaption>"
+            "<img class='img-fluid border' src='test.png'></figure></div>"
+            "<div class='col-md-6'><figure><figcaption>flight</figcaption>"
+            "<img class='img-fluid border' src='flight.png'></figure></div>"
             "</div>"
         )
+        panes = [
+            ("blink", "Blink", blink),
+            ("text", "Text diff", text_diff),
+            ("pixels", f"Pixel diff ({entry.n_changed_pixels} px)", pixels),
+            ("side", "Side by side", side_by_side),
+        ]
+        tabs = ["<ul class='nav nav-tabs' role='tablist'>"]
+        content = ["<div class='tab-content pt-3'>"]
+        for i, (pane_id, label, pane) in enumerate(panes):
+            active = " active" if i == 0 else ""
+            tabs.append(
+                "<li class='nav-item' role='presentation'>"
+                f"<button class='nav-link{active}' data-bs-toggle='tab' "
+                f"data-bs-target='#{pane_id}' type='button' role='tab'>"
+                f"{label}</button></li>"
+            )
+            content.append(
+                f"<div class='tab-pane fade{' show active' if i == 0 else ''}' "
+                f"id='{pane_id}' role='tabpanel'>{pane}</div>"
+            )
+        tabs.append("</ul>")
+        content.append("</div>")
+        parts.extend(tabs + content)
         return self._page(f"diff: {entry.item_id}", "".join(parts))
