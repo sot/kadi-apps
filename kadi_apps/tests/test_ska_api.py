@@ -1,10 +1,9 @@
+import re
+
 import numpy as np
 import requests
-import re
 from astropy.table import Table
-
-from kadi.commands import get_starcats
-from kadi.commands import get_observations
+from kadi.commands import get_observations, get_starcats
 
 from kadi_apps.blueprints.ska_api.api import _replace_object_cols_with_str
 
@@ -197,6 +196,47 @@ def test_starcats(test_server):
         for col in colnames:
             assert np.all(starcats[i][col] == starcats_api[i][col])
         assert np.all(starcats[i] == starcats_api[i])
+
+
+def _interpret_aca_table_(json):
+    from proseco.catalog import ACATable, AcqTable, GuideTable
+    from Quaternion import Quat
+    meta = json["meta"].copy()
+    meta["acqs"] = AcqTable(meta["acqs"]["columns"], meta=meta["acqs"]["meta"])
+    meta["guides"] = GuideTable(meta["guides"]["columns"], meta=meta["guides"]["meta"])
+    meta["att"] = Quat(meta["att"])
+    starcat = ACATable(json["columns"], meta=meta)
+    return starcat
+
+
+def test_starcats_json(test_server):
+    api_url = f"{test_server['url']}/ska_api"
+    start = '2022:001'
+    stop = '2022:002'
+    obsid = None
+    starcats = get_starcats(start=start, stop=stop, obsid=obsid, scenario='flight')
+    url = f'{api_url}/kadi/commands/get_starcats?{start=}&{stop=}&scenario=flight&table_format=json'
+    r = requests.get(url)
+    starcats_api = [_interpret_aca_table_(cat) for cat in r.json()]
+    colnames = [
+        'slot', 'idx', 'id', 'type', 'sz', 'mag', 'maxmag', 'yang', 'zang', 'dim', 'res', 'halfw'
+    ]
+    for i in range(len(starcats)):
+        sc = starcats[i]
+        sc_api = starcats_api[i]
+        for col in colnames:
+            assert np.all(sc[col] == sc_api[col])
+        assert np.all(sc == sc_api), f"starcat {sc.date} data does not match API output"
+
+        assert np.all(sc.meta['acqs'] == sc_api.meta['acqs']), f"starcat {sc.date} acqs does not match API output"
+        assert np.all(sc.meta['guides'] == sc_api.meta['guides']), f"starcat {sc.date} guides does not match API output"
+        assert sc.date == sc_api.date, f"starcat {sc.date} date does not match API output"
+        assert sc.obsid == sc_api.obsid, f"starcat {sc.date} obsid does not match API output"
+        assert sc.duration == sc_api.duration, f"starcat {sc.date} duration does not match API output"
+        assert sc.detector == sc_api.detector, f"starcat {sc.date} detector does not match API output"
+        assert sc.sim_offset == sc_api.sim_offset, f"starcat {sc.date} sim_offset does not match API output"
+        assert sc.t_ccd_guide == sc_api.t_ccd_guide, f"starcat {sc.date} t_ccd_guide does not match API output"
+        assert sc.t_ccd_acq == sc_api.t_ccd_acq, f"starcat {sc.date} t_ccd_acq does not match API output"
 
 
 def test_observations(test_server):

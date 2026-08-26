@@ -1,9 +1,8 @@
-from flask import Blueprint
-from flask import request
-
-import logging
 import json
+import logging
 
+from flask import Blueprint, request
+from Quaternion import Quat
 
 APPS = {
     ('agasc',): ['get_star', 'get_stars', 'get_agasc_cone'],
@@ -140,14 +139,21 @@ class APIEncoder(json.JSONEncoder):
         self.strict_encode = strict_encode
 
     def encode_table(self, obj):
-        if self.table_format not in ('rows', 'columns'):
+        if self.table_format not in ('rows', 'columns', 'json'):
             raise ValueError('table_format={} not allowed'.format(self.table_format))
 
         obj = _replace_object_cols_with_str(obj)
 
         out = {name: obj[name].tolist() for name in obj.colnames}
 
-        if self.table_format == 'rows':
+        if self.table_format == 'json':
+            out = {
+                "meta": obj.meta,
+                "class_name": type(obj).__name__,
+                "full_name": f"{obj.__module__}.{type(obj).__name__}",
+                "columns": out,
+            }
+        elif self.table_format == 'rows':
             # Convert from dict of list to list of dict
             out = [{name: out[name][ii] for name in obj.colnames}
                    for ii in range(len(obj))]
@@ -155,8 +161,8 @@ class APIEncoder(json.JSONEncoder):
         return out
 
     def default(self, obj):
-        from astropy.table import Table
         import numpy as np
+        from astropy.table import Table
 
         # Potentially convert something with a `table` property to an astropy Table.
         if hasattr(obj, 'table') and isinstance(obj.__class__.table, property):
@@ -185,6 +191,8 @@ class APIEncoder(json.JSONEncoder):
         elif isinstance(obj, bytes):
             return obj.decode('utf-8')
 
+        elif isinstance(obj, Quat):
+            return obj.q.tolist()
         else:
             try:
                 out = super(APIEncoder, self).default(obj)
