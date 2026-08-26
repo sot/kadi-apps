@@ -198,7 +198,7 @@ def test_starcats(test_server):
         assert np.all(starcats[i] == starcats_api[i])
 
 
-def _interpret_aca_table_(json):
+def _interpret_aca_table(json):
     from proseco.catalog import ACATable, AcqTable, GuideTable
     from Quaternion import Quat
     meta = json["meta"].copy()
@@ -217,15 +217,12 @@ def test_starcats_json(test_server):
     starcats = get_starcats(start=start, stop=stop, obsid=obsid, scenario='flight')
     url = f'{api_url}/kadi/commands/get_starcats?{start=}&{stop=}&scenario=flight&table_format=json'
     r = requests.get(url)
-    starcats_api = [_interpret_aca_table_(cat) for cat in r.json()]
-    colnames = [
-        'slot', 'idx', 'id', 'type', 'sz', 'mag', 'maxmag', 'yang', 'zang', 'dim', 'res', 'halfw'
-    ]
+    assert r.ok
+    starcats_api = [_interpret_aca_table(cat) for cat in r.json()]
+    assert len(starcats) == len(starcats_api)
     for i in range(len(starcats)):
         sc = starcats[i]
         sc_api = starcats_api[i]
-        for col in colnames:
-            assert np.all(sc[col] == sc_api[col])
         assert np.all(sc == sc_api), f"starcat {sc.date} data does not match API output"
 
         assert np.all(sc.meta['acqs'] == sc_api.meta['acqs']), f"starcat {sc.date} acqs does not match API output"
