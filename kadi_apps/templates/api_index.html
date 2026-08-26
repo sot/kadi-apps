@@ -52,10 +52,10 @@ class="with-background"
 (<tt class="docutils literal"><span class="pre">Content-type:</span> application/json</tt>).</p>
 <h3>Table format</h3>
 <p>One special option which is common to all queries is the <tt class="docutils literal">table_format</tt>, which can take the value
-<tt class="docutils literal">rows</tt>, <tt class="docutils literal">columns</tt> or <tt class="docutils literal">json</tt> (default=``rows``).  This specifies whether to return any tabular data as
+<tt class="docutils literal">rows</tt>, <tt class="docutils literal">columns</tt> or <tt class="docutils literal">full</tt> (default=``rows``).  This specifies whether to return any tabular data as
 either a list of dicts (<tt class="docutils literal">rows</tt>) or a dict of lists (<tt class="docutils literal">columns</tt>).  For large query results the
 <tt class="docutils literal">columns</tt> option will generally be more compact because the table column names are not repeated for
-every row. The <tt class="docutils literal">json</tt> option returns a dict with the columns (as a dict of lists) under the
+every row. The <tt class="docutils literal">full</tt> option returns a dict with the columns (as a dict of lists) under the
 <tt class="docutils literal">columns</tt> key, and also includes the table metadata under the <tt class="docutils literal">meta</tt> key together with the
 table class name. For example:</p>
 <p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002&amp;table_format=columns">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}/kadi?start=2019:001&amp;stop=2019:002&amp;table_format=columns</a></p>

@@ -139,18 +139,18 @@ class APIEncoder(json.JSONEncoder):
         self.strict_encode = strict_encode
 
     def encode_table(self, obj):
-        if self.table_format not in ('rows', 'columns', 'json'):
+        if self.table_format not in ('rows', 'columns', 'full'):
             raise ValueError('table_format={} not allowed'.format(self.table_format))
 
         obj = _replace_object_cols_with_str(obj)
 
         out = {name: obj[name].tolist() for name in obj.colnames}
 
-        if self.table_format == 'json':
+        if self.table_format == 'full':
             out = {
                 "meta": obj.meta,
                 "class_name": type(obj).__name__,
-                "full_name": f"{obj.__module__}.{type(obj).__name__}",
+                "full_name": f"{type(obj).__module__}.{type(obj).__name__}",
                 "columns": out,
             }
         elif self.table_format == 'rows':
@@ -192,7 +192,14 @@ class APIEncoder(json.JSONEncoder):
             return obj.decode('utf-8')
 
         elif isinstance(obj, Quat):
+            if self.table_format == 'full':
+                return {
+                    "class_name": type(obj).__name__,
+                    "full_name": f"{type(obj).__module__}.{type(obj).__name__}",
+                    "q": obj.q.tolist(),
+                }
             return obj.q.tolist()
+
         else:
             try:
                 out = super(APIEncoder, self).default(obj)
