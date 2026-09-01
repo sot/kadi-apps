@@ -1,0 +1,25 @@
+channels:
+  - https://icxc.cfa.harvard.edu/aspect/ska3-conda/test
+  - https://icxc.cfa.harvard.edu/aspect/ska3-conda/flight
+  - conda-forge
+dependencies:
+  - ska3-flight=2024.5
+  - ska3-perl=2024.2
+  - kadi-apps
+  - astromon
+  - flask=2.2.3
+  - flask-compress=1.13
+  - flask-cors=3.0.10
+  - flask-login=0.6.2
+  - flask-mail=0.9.1
+  - flask-restful=0.3.9
+  - flask-sqlalchemy=3.0.3
+  - flask-user=1.0.2.2
+  - flask-wtf=1.1.1
+  - dash=2.9.2
+  - dash-core-components=2.0.0
+  - dash-html-components=2.0.0
+  - dash-renderer=1.9.1
+  - dash-table=5.0.0
+  - python-dotenv
+  - supervisor
