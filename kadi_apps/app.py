@@ -73,6 +73,18 @@ def get_app(name=__name__, settings='devel'):
     app.register_error_handler(404, page_not_found)
     app.register_error_handler(500, internal_error)
 
+    def close_django_connections(exc=None):
+        # kadi.events holds one sqlite connection per worker thread and the
+        # events database file is atomically replaced by cron, so never carry
+        # a connection across requests.
+        try:
+            from django.db import close_old_connections
+            close_old_connections()
+        except Exception:
+            pass
+
+    app.teardown_request(close_django_connections)
+
     app.add_url_rule("/", view_func=index)
     app.add_url_rule("/api/", view_func=api_index)
 
