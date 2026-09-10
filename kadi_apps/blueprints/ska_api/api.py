@@ -1,9 +1,8 @@
-from flask import Blueprint
-from flask import request
-
-import logging
 import json
+import logging
 
+from flask import Blueprint, request
+from Quaternion import Quat
 
 APPS = {
     ('agasc',): ['get_star', 'get_stars', 'get_agasc_cone'],
@@ -133,6 +132,17 @@ def _replace_object_cols_with_str(tbl):
     return tbl
 
 
+def _class_info(obj):
+    """Class name and fully-qualified class name of ``obj``
+
+    :returns: dict
+    """
+    return {
+        "class_name": type(obj).__name__,
+        "full_name": f"{type(obj).__module__}.{type(obj).__name__}",
+    }
+
+
 class APIEncoder(json.JSONEncoder):
     def __init__(self, table_format=None, strict_encode=True, **kwargs):
         self.table_format = table_format or 'rows'
@@ -140,23 +150,65 @@ class APIEncoder(json.JSONEncoder):
         self.strict_encode = strict_encode
 
     def encode_table(self, obj):
-        if self.table_format not in ('rows', 'columns'):
+        if self.table_format not in ('rows', 'columns', 'full'):
             raise ValueError('table_format={} not allowed'.format(self.table_format))
 
         obj = _replace_object_cols_with_str(obj)
 
         out = {name: obj[name].tolist() for name in obj.colnames}
 
-        if self.table_format == 'rows':
+        if self.table_format == 'full':
+            out = {
+                "meta": self._json_safe(obj.meta),
+                **_class_info(obj),
+                "columns": out,
+            }
+        elif self.table_format == 'rows':
             # Convert from dict of list to list of dict
             out = [{name: out[name][ii] for name in obj.colnames}
                    for ii in range(len(obj))]
 
         return out
 
+    def encode_object(self, obj, plain, full):
+        """Encode a non-table object, adding class info for table_format='full'
+
+        :param obj: the object being encoded
+        :param plain: the value to use for the 'rows' and 'columns' formats
+        :param full: dict of the values to include along with the class info
+        :returns: dict or ``plain``
+        """
+        if self.table_format == 'full':
+            return {**_class_info(obj), **full}
+        return plain
+
+    def _json_safe(self, obj):
+        """Replace values within ``obj`` that cannot be JSON encoded with a marker
+
+        Dicts and lists are traversed so only the offending value is replaced.
+
+        :returns: the original object or a copy with unserializable values replaced
+        """
+        if isinstance(obj, dict):
+            return {key: self._json_safe(val) for key, val in obj.items()}
+
+        if isinstance(obj, (list, tuple)):
+            return [self._json_safe(val) for val in obj]
+
+        try:
+            self.encode(obj)
+        except Exception:
+            # Note this gives no detail about the value, but unlike repr() it is stable
+            # (a repr often includes the memory address).
+            return {"__unserializable__": f"{type(obj).__module__}.{type(obj).__name__}"}
+
+        return obj
+
     def default(self, obj):
-        from astropy.table import Table
         import numpy as np
+        from astropy.table import Table
+        from astropy.time import Time
+        from astropy.units import Quantity
 
         # Potentially convert something with a `table` property to an astropy Table.
         if hasattr(obj, 'table') and isinstance(obj.__class__.table, property):
@@ -164,11 +216,9 @@ class APIEncoder(json.JSONEncoder):
             if isinstance(obj_table, Table):
                 obj = obj_table
 
-        if type(obj) in [np.int32, np.int64]:
-            return int(obj)
-
-        elif type(obj) in [np.float32, np.float64]:
-            return float(obj)
+        if isinstance(obj, np.generic):
+            # Any numpy scalar: bool_, all int/uint/float sizes and str_.
+            return obj.item()
 
         elif isinstance(obj, np.ma.MaskedArray):
             return {
@@ -176,14 +226,33 @@ class APIEncoder(json.JSONEncoder):
                 'mask': obj.mask.tolist()
             }
 
+        elif isinstance(obj, Quantity):
+            # This must come before ndarray because Quantity is an ndarray subclass
+            # whose tolist() raises NotImplementedError.
+            value = obj.value.tolist()
+            return self.encode_object(
+                obj, value, {"value": value, "unit": obj.unit.to_string()}
+            )
+
         elif isinstance(obj, np.ndarray):
             return obj.tolist()
 
         elif isinstance(obj, Table):
             return self.encode_table(obj)
 
+        elif isinstance(obj, Time):
+            return self.encode_object(
+                obj,
+                obj.value,
+                {"value": obj.value, "format": obj.format, "scale": obj.scale},
+            )
+
         elif isinstance(obj, bytes):
             return obj.decode('utf-8')
+
+        elif isinstance(obj, Quat):
+            q = obj.q.tolist()
+            return self.encode_object(obj, q, {"q": q})
 
         else:
             try:
