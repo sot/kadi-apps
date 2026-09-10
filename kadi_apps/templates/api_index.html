@@ -57,7 +57,9 @@ either a list of dicts (<tt class="docutils literal">rows</tt>) or a dict of lis
 <tt class="docutils literal">columns</tt> option will generally be more compact because the table column names are not repeated for
 every row. The <tt class="docutils literal">full</tt> option returns a dict with the columns (as a dict of lists) under the
 <tt class="docutils literal">columns</tt> key, and also includes the table metadata under the <tt class="docutils literal">meta</tt> key together with the
-table class name. For example:</p>
+table class name. Metadata values that cannot be represented as JSON (for example an internal
+object reference) are replaced by a <tt class="docutils literal">__unserializable__</tt> marker giving the class
+that was dropped. For example:</p>
 <p><a class="reference external" href="{{ url_for('ska_api.api', path='kadi/events/manvrs/filter') }}?start=2019:001&amp;stop=2019:002&amp;table_format=columns">{{ url_for('ska_api.api', path='kadi/events/manvrs/filter', _external=True) }}/kadi?start=2019:001&amp;stop=2019:002&amp;table_format=columns</a></p>
 
 <h2>Available entrypoints</h2>
