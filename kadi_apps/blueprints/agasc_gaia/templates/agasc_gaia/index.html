@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+
+{% block content %}
+<p><p>
+<h1 align="center"> AGASC-Gaia View </h1>
+
+<form action="" method="get">
+  &nbsp;
+  <div class="form-group row">
+    <div class="col-3"></div>
+      <div class="col-6">
+          <label class="col-form-label" for="agasc_id">AGASC ID</label>
+      </div>
+  </div>
+  <div class="form-group row">
+    <div class="col-3"></div>
+    <div class="col-6">
+        <input type="text" class="form-control" id="agasc_id" name="agasc_id"
+        {% if agasc_id != '' %} placeholder="{{agasc_id}}"  value="" {% endif %}
+        >
+        </div>
+    <div class="col-3"></div>
+    <!-- <div class="col-sm"> </div> -->
+  </div>
+</form>
+
+&nbsp;
+
+{% if agasc_gaia_data %}
+{{ agasc_gaia_data | safe }}
+{% endif %}
+
+{% endblock %}
+
